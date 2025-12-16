@@ -103,10 +103,24 @@ Giải pháp: [Cập nhật lên phiên bản mới]
 CVE: [Nếu có]
 ```
 
-## Liên hệ
+## 📞 Liên hệ
 
 Nếu bạn có bất kỳ câu hỏi bảo mật nào, vui lòng liên hệ với người duy trì dự án.
 
 ---
+
+<div align="center">
+
+### 🔒 Bảo mật là ưu tiên hàng đầu
+
+Chúng tôi cam kết bảo vệ người dùng và xử lý mọi báo cáo bảo mật một cách nghiêm túc.
+
+[![Security Policy](https://img.shields.io/badge/Security-Policy-red?logo=security)](SECURITY.md)
+
+**Cảm ơn đã giúp PHTV an toàn hơn!**
+
+[🏠 Trang chủ](README.md) • [📧 Email bảo mật](mailto:hungtien10a7@gmail.com)
+
+</div>
 
 **Cảm ơn đã giúp giữ PHTV an toàn!** 🔒

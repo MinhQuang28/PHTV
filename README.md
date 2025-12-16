@@ -9,8 +9,10 @@
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![macOS 14+](https://img.shields.io/badge/macOS-14+-blue.svg)](https://www.apple.com/macos/)
 [![Swift 6.0+](https://img.shields.io/badge/Swift-6.0+-orange.svg)](https://swift.org)
+[![GitHub release](https://img.shields.io/github/v/release/PhamHungTien/PHTV)](../../releases/latest)
+[![GitHub stars](https://img.shields.io/github/stars/PhamHungTien/PHTV)](../../stargazers)
 
-[**Tải về**](https://phamhungtien.com/PHTV/) • [**Tài liệu**](https://phamhungtien.com/PHTV/#setup) • [**Báo lỗi**](../../issues) • [**FAQ**](FAQ.md)
+[**📥 Tải về**](https://phamhungtien.com/PHTV/) • [**📖 Tài liệu**](INSTALL.md) • [**🐛 Báo lỗi**](../../issues) • [**❓ FAQ**](FAQ.md)
 
 </div>
 
@@ -110,7 +112,7 @@ Click biểu tượng **Vi** (Việt) / **En** (Anh) trên menu bar:
 - **CGEvent API** - Event interception và xử lý bàn phím
 - **NSUserDefaults** - Lưu trữ cấu hình local
 
-## � Changelog
+## 📋 Changelog
 
 ### v1.1.1 (2025-12-17)
 
@@ -152,8 +154,8 @@ Mọi đóng góp đều được chào đón! Xem [CONTRIBUTING.md](CONTRIBUTIN
 - 📧 Email: hungtien10a7@gmail.com
 - 🐙 GitHub: [Issues](../../issues) • [Discussions](../../discussions)
 - 🌐 Website: [phamhungtien.com/PHTV](https://phamhungtien.com/PHTV/)
-- � Facebook: [phamhungtien1404](https://www.facebook.com/phamhungtien1404)
-- �💼 LinkedIn: [Phạm Hùng Tiến](https://www.linkedin.com/in/ph%E1%BA%A1m-h%C3%B9ng-ti%E1%BA%BFn-a1b405327/)
+- 👤 Facebook: [phamhungtien1404](https://www.facebook.com/phamhungtien1404)
+- 💼 LinkedIn: [Phạm Hùng Tiến](https://www.linkedin.com/in/ph%E1%BA%A1m-h%C3%B9ng-ti%E1%BA%BFn-a1b405327/)
 
 ## 📄 License & Credits
 
@@ -165,7 +167,11 @@ Dự án kế thừa và mở rộng engine từ **[OpenKey](https://github.com/
 
 <div align="center">
 
-**[⬆ Về đầu trang](#phtv)**
+### ⭐ Nếu PHTV hữu ích, hãy cho dự án một star!
+
+[![GitHub stars](https://img.shields.io/github/stars/PhamHungTien/PHTV?style=social)](../../stargazers)
+
+**[⬆️ Về đầu trang](#phtv)**
 
 Made with ❤️ for Vietnamese macOS users
 

@@ -157,7 +157,15 @@ Hoặc trong Settings → Reset All (nếu có button này).
 
 **A:** Dựa trên [OpenKey](https://github.com/tuyenvm/OpenKey) - dự án mã nguồn mở tiếng Việt.
 
-## Liên hệ
+---
 
-- **Issues**: [GitHub](https://github.com/PhamHungTien/PHTV/issues)
-- **Email**: hungtien10a7@gmail.com
+<div align="center">
+
+## 💬 Vẫn có câu hỏi?
+
+[![GitHub Discussions](https://img.shields.io/badge/GitHub-Discussions-green?logo=github)](../../discussions)
+[![Email](https://img.shields.io/badge/Email-hungtien10a7@gmail.com-blue?logo=gmail)](mailto:hungtien10a7@gmail.com)
+
+[🏠 Trang chủ](README.md) • [📦 Cài đặt](INSTALL.md) • [🐛 Báo lỗi](../../issues)
+
+</div>

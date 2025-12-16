@@ -78,28 +78,59 @@ xcodebuild -scheme PHTV -configuration Release -arch arm64 -arch x86_64
 3. **Tùy chỉnh phím chuyển** - Settings → Keyboard Shortcuts (optional)
 4. **Thêm Macros** - Settings → Macros (optional)
 
-## 📖 Tài liệu
+## 📖 Tài liệu thêm
 
-- [Hướng dẫn chi tiết](https://phamhungtien.com/PHTV/#setup) - Hình ảnh và video
-- [Các tính năng](https://phamhungtien.com/PHTV/#features)
-- [Liên hệ hỗ trợ](https://phamhungtien.com/PHTV/#feedback)
+- 📚 [Hướng dẫn chi tiết](https://phamhungtien.com/PHTV/#setup) - Video & Screenshots
+- ⚡ [Các tính năng](README.md#-tính-năng-nổi-bật) 
+- 💬 [FAQ](FAQ.md) - Câu hỏi thường gặp
+- 🤝 [Đóng góp](CONTRIBUTING.md)
 
 ---
 
 ## 🆘 Xử lý sự cố
 
-### PHTV không hoạt động
+<details>
+<summary><b>PHTV không hoạt động</b></summary>
 
-**Kiểm tra**:
+**Kiểm tra:**
 
-1. Đảm bảo đã bật PHTV trong Language Settings
-2. Restart app gặp vấn đề
-3. Kiểm tra System Preferences → Security & Privacy → Accessibility
+1. Đảm bảo đã cấp quyền **Accessibility**
+2. Restart PHTV từ menu bar (Quit → Reopen)
+3. Kiểm tra **System Settings > Privacy & Security > Accessibility**
 
-**Bật quyền truy cập**:
+</details>
 
-```bash
-# Yêu cầu password admin
+<details>
+<summary><b>Không gõ được tiếng Việt</b></summary>
+
+**Giải pháp:**
+
+1. Click icon PHTV trên menu bar
+2. Đảm bảo chọn "**Tiếng Việt**" (không phải English)
+3. Kiểm tra phương pháp gõ (Telex/VNI)
+
+</details>
+
+<details>
+<summary><b>Phím tắt không hoạt động</b></summary>
+
+**Kiểm tra:**
+
+1. Settings → System → Hotkey Configuration
+2. Đảm bảo không trùng với phím tắt khác trong macOS
+3. Thử đổi sang tổ hợp phím khác
+
+</details>
+
+---
+
+<div align="center">
+
+**Vẫn gặp vấn đề?** [Tạo issue trên GitHub](../../issues/new) hoặc [Liên hệ qua email](mailto:hungtien10a7@gmail.com)
+
+[🏠 Về trang chủ](README.md) • [📧 Email](mailto:hungtien10a7@gmail.com) • [💬 Discussions](../../discussions)
+
+</div>
 sudo defaults write com.apple.universalaccess enabled -bool true
 ```
 

@@ -163,4 +163,18 @@ func toggleVietnameseMode(enabled: Bool) {
 - Sử dụng 4 spaces cho indentation
 - PascalCase cho tên class/struct
 
+---
+
+<div align="center">
+
 ## ✨ Cảm ơn đã đóng góp!
+
+Mọi đóng góp, dù lớn hay nhỏ, đều được trân trọng và ghi nhận.
+
+[![Contributors](https://img.shields.io/github/contributors/PhamHungTien/PHTV)](../../graphs/contributors)
+
+**[⬆️ Về đầu trang](#-hướng-dẫn-đóng-góp)**
+
+[🏠 Trang chủ](README.md) • [📦 Cài đặt](INSTALL.md) • [💬 FAQ](FAQ.md)
+
+</div>
