@@ -19,6 +19,7 @@
 Gửi email chi tiết lỗ hổng đến: **hungtien10a7@gmail.com**
 
 Bao gồm:
+
 - Mô tả lỗ hổng
 - Cách tái hiện
 - Tác động tiềm ẩn
@@ -39,10 +40,11 @@ Bao gồm:
 
 ## Hỗ trợ phiên bản
 
-| Phiên bản | Hỗ trợ |
-| --------- | ------ |
-| 1.x       | ✅ Đầy đủ |
+| Phiên bản | Hỗ trợ            |
+| --------- | ----------------- |
+| 1.x       | ✅ Đầy đủ         |
 | 0.x       | ⚠️ Quan trọng chỉ |
+
 - Remote code execution
 - Tấn công elevation of privilege
 

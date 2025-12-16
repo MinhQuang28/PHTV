@@ -116,6 +116,7 @@ Hoặc trong Settings → Reset All (nếu có button này).
 ### Q14: Dữ liệu được lưu ở đâu?
 
 **A:** Chỉ nằm trên máy của bạn:
+
 - Settings: `~/Library/Preferences/com.phtv.app.plist`
 - Macros: `~/Library/Application Support/PHTV/`
 
@@ -136,7 +137,7 @@ Hoặc trong Settings → Reset All (nếu có button này).
 
 ### Q17: Phím tắt không hoạt động?
 
-**A:** 
+**A:**
 
 1. Kiểm tra Settings → Keyboard Shortcuts
 2. Kiểm tra System Preferences → Keyboard → Shortcuts

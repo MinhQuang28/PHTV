@@ -17,6 +17,7 @@ Xem [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md). Bằng cách tham gia, bạn đ�
 ## 🚀 Bắt đầu nhanh
 
 1. **Fork & Clone:**
+
    ```bash
    git clone https://github.com/YOUR_USERNAME/PHTV.git
    cd PHTV
@@ -24,16 +25,19 @@ Xem [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md). Bằng cách tham gia, bạn đ�
    ```
 
 2. **Tạo branch mới:**
+
    ```bash
    git checkout -b feature/your-name
    ```
 
 3. **Build & test:**
+
    ```bash
    open PHTV.xcodeproj
    ```
 
 4. **Commit & push:**
+
    ```bash
    git add .
    git commit -m "feat: Mô tả tính năng"
@@ -78,6 +82,7 @@ Format: `<type>: <mô tả>`
 - `refactor:` - Tái cấu trúc
 - `test:` - Thêm test
 - `chore:` - Công việc khác
+
 ```
 
 ## 🔨 Hướng dẫn phát triển
@@ -85,25 +90,27 @@ Format: `<type>: <mô tả>`
 ### Cấu trúc dự án
 
 ```
+
 PHTV/
 ├── PHTV/
-│   ├── Application/           # AppDelegate, main entry point
-│   ├── Core/
-│   │   ├── Engine/            # Core input method engine (C++)
-│   │   │   ├── Engine.cpp/.h  # Logic chính
-│   │   │   ├── Vietnamese.cpp/.h # Bảng mã tiếng Việt
-│   │   │   ├── Macro.cpp/.h   # Quản lý macro
-│   │   │   └── ...
-│   │   └── Platforms/         # macOS-specific integration
-│   ├── Managers/              # Business logic
-│   ├── SwiftUI/               # Giao diện người dùng
-│   │   ├── Views/             # SwiftUI views
-│   │   ├── Controllers/       # Window/Status bar controllers
-│   │   └── Utilities/         # Helper functions
-│   └── Utils/                 # Utility functions
-├── PHTV.xcodeproj/            # Xcode project
+│ ├── Application/ # AppDelegate, main entry point
+│ ├── Core/
+│ │ ├── Engine/ # Core input method engine (C++)
+│ │ │ ├── Engine.cpp/.h # Logic chính
+│ │ │ ├── Vietnamese.cpp/.h # Bảng mã tiếng Việt
+│ │ │ ├── Macro.cpp/.h # Quản lý macro
+│ │ │ └── ...
+│ │ └── Platforms/ # macOS-specific integration
+│ ├── Managers/ # Business logic
+│ ├── SwiftUI/ # Giao diện người dùng
+│ │ ├── Views/ # SwiftUI views
+│ │ ├── Controllers/ # Window/Status bar controllers
+│ │ └── Utilities/ # Helper functions
+│ └── Utils/ # Utility functions
+├── PHTV.xcodeproj/ # Xcode project
 └── README.md
-```
+
+````
 
 ### Build và Test
 
@@ -116,7 +123,7 @@ xcodebuild -project PHTV.xcodeproj -scheme PHTV test
 
 # Clean build
 xcodebuild -project PHTV.xcodeproj clean
-```
+````
 
 ### Debugging
 
@@ -155,4 +162,5 @@ func toggleVietnameseMode(enabled: Bool) {
 
 - Sử dụng 4 spaces cho indentation
 - PascalCase cho tên class/struct
+
 ## ✨ Cảm ơn đã đóng góp!
