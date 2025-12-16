@@ -1,6 +1,16 @@
-# FAQ - Câu hỏi thường gặp
+<div align="center">
 
-## Cài đặt & Cấu hình
+# ❓ FAQ - Câu hỏi thường gặp
+
+**Giải đáp thắc mắc về PHTV**
+
+[🏠 Trang chủ](README.md) • [📦 Cài đặt](INSTALL.md) • [🤝 Đóng góp](CONTRIBUTING.md)
+
+</div>
+
+---
+
+## 📥 Cài đặt & Cấu hình
 
 ### Q1: PHTV có tương thích với phiên bản macOS nào?
 

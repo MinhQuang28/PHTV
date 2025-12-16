@@ -1,6 +1,16 @@
-# Hướng dẫn cài đặt PHTV
+<div align="center">
 
-## 🚀 Tải xuống nhanh
+# 📦 Hướng dẫn cài đặt PHTV
+
+**Cài đặt bộ gõ tiếng Việt cho macOS trong 3 phút**
+
+[🏠 Trang chủ](README.md) • [💬 FAQ](FAQ.md) • [🐛 Báo lỗi](../../issues)
+
+</div>
+
+---
+
+## 🚀 Tải xuống
 
 **[👉 Tải PHTV từ phamhungtien.com/PHTV](https://phamhungtien.com/PHTV/)**
 

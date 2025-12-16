@@ -1,6 +1,16 @@
-# Quy tắc ứng xử (Code of Conduct)
+<div align="center">
 
-## Cam kết của chúng tôi
+# 📋 Quy tắc ứng xử
+
+**Code of Conduct - Tạo môi trường cộng đồng thân thiện**
+
+[🏠 Trang chủ](README.md) • [🤝 Đóng góp](CONTRIBUTING.md)
+
+</div>
+
+---
+
+## 🤝 Cam kết của chúng tôi
 
 Để tạo ra một môi trường mở và đón tiếp, chúng tôi - những người đóng góp và người duy trì cam kết làm cho việc tham gia vào dự án của chúng tôi và cộng đồng của chúng tôi trở thành một trải nghiệm không bị quấy rối cho tất cả mọi người, bất kể tuổi tác, kích thước cơ thể, khuyết tật, dân tộc, đặc tính giới tính, bản sắc giới tính và biểu hiện, mức độ kinh nghiệm, giáo dục, tình trạng kinh tế xã hội, quốc tịch, diện mạo, chủng tộc, tôn giáo, hoặc bản sắc và định hướng tính dục.
 

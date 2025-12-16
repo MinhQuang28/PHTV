@@ -1,6 +1,16 @@
-# Chính sách bảo mật
+<div align="center">
 
-## Báo cáo lỗi bảo mật
+# 🔒 Chính sách bảo mật
+
+**Security Policy - Báo cáo lỗ hổng bảo mật**
+
+[🏠 Trang chủ](README.md) • [📧 Email](mailto:hungtien10a7@gmail.com)
+
+</div>
+
+---
+
+## 🚨 Báo cáo lỗi bảo mật
 
 **Không mở public issue** cho lỗ hổng bảo mật.
 

@@ -1,8 +1,16 @@
-# Hướng dẫn Đóng góp
+<div align="center">
 
-Cảm ơn bạn quan tâm đóng góp cho PHTV! Hướng dẫn này sẽ giúp bạn bắt đầu.
+# 🤝 Hướng dẫn Đóng góp
 
-## 🤝 Quy tắc ứng xử
+**Cảm ơn bạn muốn đóng góp cho PHTV!**
+
+[🏠 Trang chủ](README.md) • [📋 Code of Conduct](CODE_OF_CONDUCT.md) • [🐛 Issues](../../issues)
+
+</div>
+
+---
+
+## 📜 Quy tắc ứng xử
 
 Xem [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md). Bằng cách tham gia, bạn đồng ý tuân thủ các quy tắc.
 

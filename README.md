@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="PHTV/Resources/icon.png" alt="PHTV Icon" width="128" height="128">
+
 # PHTV
 
 ### Bộ gõ tiếng Việt hiện đại cho macOS
@@ -133,7 +135,8 @@ Mọi đóng góp đều được chào đón! Xem [CONTRIBUTING.md](CONTRIBUTIN
 - 📧 Email: hungtien10a7@gmail.com
 - 🐙 GitHub: [Issues](../../issues) • [Discussions](../../discussions)
 - 🌐 Website: [phamhungtien.com/PHTV](https://phamhungtien.com/PHTV/)
-- 💼 LinkedIn: [Phạm Hùng Tiến](https://www.linkedin.com/in/ph%E1%BA%A1m-h%C3%B9ng-ti%E1%BA%BFn-a1b405327/)
+- � Facebook: [phamhungtien1404](https://www.facebook.com/phamhungtien1404)
+- �💼 LinkedIn: [Phạm Hùng Tiến](https://www.linkedin.com/in/ph%E1%BA%A1m-h%C3%B9ng-ti%E1%BA%BFn-a1b405327/)
 
 ## 📄 License & Credits
 
