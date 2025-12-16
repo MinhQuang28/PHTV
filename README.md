@@ -102,7 +102,7 @@ Click biểu tượng **Vi** (Việt) / **En** (Anh) trên menu bar:
 | ------------- | ----------------------------------------- |
 | **macOS**     | 14.0+ (Sonoma trở lên)                    |
 | **Kiến trúc** | Apple Silicon (arm64) hoặc Intel (x86_64) |
-| **Xcode**     | 16.0+ (nếu build từ source)               |
+| **Xcode**     | 26.0+ (nếu build từ source)               |
 | **Quyền**     | Accessibility                             |
 
 ## 🛠️ Công nghệ
