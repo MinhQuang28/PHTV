@@ -40,9 +40,10 @@ struct SettingsView: View {
                 if searchText.isEmpty {
                     // Normal tab list
                     ForEach(SettingsTab.allCases) { tab in
-                        HStack {
+                        HStack(spacing: 12) {
                             Image(systemName: tab.iconName)
                                 .foregroundStyle(selectedTab == tab ? .white : themeManager.themeColor)
+                                .frame(width: 20, alignment: .center)
                             Text(tab.title)
                                 .foregroundStyle(selectedTab == tab ? .white : .primary)
                             Spacer()
