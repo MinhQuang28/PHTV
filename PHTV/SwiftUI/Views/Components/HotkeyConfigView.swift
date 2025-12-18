@@ -190,10 +190,11 @@ struct HotkeyConfigView: View {
                     }
                     .font(.body)
 
-                    Slider(
+                    CustomSlider(
                         value: $appState.beepVolume,
-                        in: 0.0...1.0,
+                        range: 0.0...1.0,
                         step: 0.01,
+                        tintColor: themeManager.themeColor,
                         onEditingChanged: { editing in
                             // Play pop sound on slider release
                             if !editing && appState.beepVolume > 0 {
@@ -201,7 +202,6 @@ struct HotkeyConfigView: View {
                             }
                         }
                     )
-                    .tint(themeManager.themeColor)
                     // The slider should still adjust volume even if the mode beep is disabled
                 }
                 .padding(.leading, 50)
@@ -401,6 +401,95 @@ class KeyCaptureView: NSView {
         default: return "Key \(keyCode)"
         }
     }
+}
+
+// MARK: - Custom Slider without tick marks
+struct CustomSlider: NSViewRepresentable {
+    @Binding var value: Double
+    let range: ClosedRange<Double>
+    let step: Double
+    let tintColor: Color
+    var onEditingChanged: ((Bool) -> Void)? = nil
+
+    func makeNSView(context: Context) -> NSSlider {
+        let slider = NSSlider()
+        slider.minValue = range.lowerBound
+        slider.maxValue = range.upperBound
+        slider.doubleValue = value
+        slider.target = context.coordinator
+        slider.action = #selector(Coordinator.valueChanged(_:))
+
+        // Important: Remove tick marks
+        slider.numberOfTickMarks = 0
+        slider.allowsTickMarkValuesOnly = false
+
+        // Set tint color
+        if let nsColor = convertToNSColor(tintColor) {
+            slider.trackFillColor = nsColor
+        }
+
+        return slider
+    }
+
+    func updateNSView(_ nsView: NSSlider, context: Context) {
+        nsView.doubleValue = value
+        nsView.minValue = range.lowerBound
+        nsView.maxValue = range.upperBound
+
+        // Update tint color
+        if let nsColor = convertToNSColor(tintColor) {
+            nsView.trackFillColor = nsColor
+        }
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+
+    @MainActor
+    class Coordinator: NSObject {
+        var parent: CustomSlider
+        var previousValue: Double?
+        var debounceTask: DispatchWorkItem?
+
+        init(_ parent: CustomSlider) {
+            self.parent = parent
+        }
+
+        @objc func valueChanged(_ sender: NSSlider) {
+            // Round to step if needed
+            let rawValue = sender.doubleValue
+            let steppedValue = round(rawValue / parent.step) * parent.step
+
+            // Detect editing state by checking if this is the first change
+            if previousValue == nil {
+                // Start of editing
+                parent.onEditingChanged?(true)
+            }
+
+            parent.value = steppedValue
+            previousValue = steppedValue
+
+            // Cancel previous debounce task
+            debounceTask?.cancel()
+
+            // Use delay to detect end of editing (when user releases slider)
+            let task = DispatchWorkItem { [weak self] in
+                guard let self = self else { return }
+                // Value hasn't changed for 0.1s, editing ended
+                self.parent.onEditingChanged?(false)
+                self.previousValue = nil
+            }
+            debounceTask = task
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1, execute: task)
+        }
+    }
+}
+
+// Helper to convert SwiftUI Color to NSColor
+fileprivate func convertToNSColor(_ color: Color) -> NSColor? {
+    guard let cgColor = color.cgColor else { return nil }
+    return NSColor(cgColor: cgColor)
 }
 
 #Preview {

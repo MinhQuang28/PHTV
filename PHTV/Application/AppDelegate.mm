@@ -545,9 +545,12 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
     //load default config if is first launch
     if (isFirstLaunch) {
         [self loadDefaultConfig];
-        NSLog(@"[AppDelegate] First launch: loaded default config");
+        // Mark as non-first-time to prevent re-initialization on next launch
+        [[NSUserDefaults standardUserDefaults] setInteger:1 forKey:@"NonFirstTime"];
+        [[NSUserDefaults standardUserDefaults] synchronize];
+        NSLog(@"[AppDelegate] First launch: loaded default config and marked NonFirstTime");
     }
-    
+
     //correct run on startup
     NSInteger val = [[NSUserDefaults standardUserDefaults] integerForKey:@"RunOnStartup"];
     [appDelegate setRunOnStartup:val];
@@ -1510,14 +1513,11 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
 
     [defaults setInteger:1 forKey:@"GrayIcon"];
     [defaults setInteger:1 forKey:@"RunOnStartup"];
-    
-    // Reset macro list to empty
-    [defaults removeObjectForKey:@"macroList"];
-    [defaults removeObjectForKey:@"macroData"];
-    
-    // Clear macro map in C++ engine
-    initMacroMap((const unsigned char*)"", 0);
-    
+
+    // IMPORTANT: DO NOT reset macroList/macroData here!
+    // User's custom abbreviations should be preserved when resetting other settings.
+    // If user wants to clear macros, they can do it from the Macro Settings UI.
+
     [defaults synchronize];
 
     [self fillData];

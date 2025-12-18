@@ -87,6 +87,13 @@ struct MacroSettingsView: View {
 
                             Spacer()
 
+                            Button(action: { exportMacros() }) {
+                                Label("Export", systemImage: "square.and.arrow.up")
+                                    .font(.subheadline)
+                            }
+                            .buttonStyle(.bordered)
+                            .disabled(macros.isEmpty || !appState.useMacro)
+
                             Button(action: { importMacros() }) {
                                 Label("Import", systemImage: "square.and.arrow.down")
                                     .font(.subheadline)
@@ -183,6 +190,39 @@ struct MacroSettingsView: View {
         }
         editingMacro = macro
         showingEditMacro = true
+    }
+
+    private func exportMacros() {
+        guard !macros.isEmpty else { return }
+
+        // macOS file save dialog
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [UTType.json]
+        panel.canCreateDirectories = true
+        panel.nameFieldStringValue = "phtv-macros.json"
+        panel.title = "Xuất danh sách gõ tắt"
+        panel.message = "Chọn vị trí lưu file gõ tắt"
+
+        if panel.runModal() == .OK, let url = panel.url {
+            do {
+                // Create array of simple dictionaries for export
+                struct ExportMacro: Encodable {
+                    let shortcut: String
+                    let expansion: String
+                }
+
+                let exportData = macros.map { ExportMacro(shortcut: $0.shortcut, expansion: $0.expansion) }
+
+                let encoder = JSONEncoder()
+                encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+                let jsonData = try encoder.encode(exportData)
+
+                try jsonData.write(to: url)
+                print("[MacroSettings] Exported \(macros.count) macros to: \(url.path)")
+            } catch {
+                print("[MacroSettings] Export failed: \(error.localizedDescription)")
+            }
+        }
     }
 
     private func importMacros() {

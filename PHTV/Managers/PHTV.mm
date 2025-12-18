@@ -707,8 +707,8 @@ extern "C" {
                 RequestNewSession();  // Direct call, no cascading
                 [appDelegate fillData];  // Update UI only
 
-                // Notify SwiftUI
-                [[NSNotificationCenter defaultCenter] postNotificationName:@"LanguageChangedFromBackend"
+                // Notify SwiftUI (use separate notification for smart switch to avoid sound)
+                [[NSNotificationCenter defaultCenter] postNotificationName:@"LanguageChangedFromSmartSwitch"
                                                                     object:@(vLanguage)];
             } else {
                 saveSmartSwitchKeyData();

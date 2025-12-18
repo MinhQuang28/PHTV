@@ -331,7 +331,7 @@ final class AppState: ObservableObject {
             }
         }
 
-        // Listen for language changes from backend (e.g., hotkey)
+        // Listen for language changes from manual actions (hotkey, UI, input type change)
         NotificationCenter.default.addObserver(
             forName: NSNotification.Name("LanguageChangedFromBackend"),
             object: nil,
@@ -344,7 +344,7 @@ final class AppState: ObservableObject {
                     self.isEnabled = language.intValue == 1
                     self.isLoadingSettings = false
 
-                    // Play beep when hotkey changes mode (if enabled)
+                    // Play beep for manual mode changes (if enabled)
                     if self.beepOnModeSwitch && self.beepVolume > 0.0 {
                         BeepManager.shared.play(volume: self.beepVolume)
                     }
@@ -365,6 +365,23 @@ final class AppState: ObservableObject {
                     self.isEnabled = language.intValue == 1
                     self.isLoadingSettings = false
                     // No beep sound for excluded app auto-switch
+                }
+            }
+        }
+
+        // Listen for language changes from smart switch (no beep sound)
+        NotificationCenter.default.addObserver(
+            forName: NSNotification.Name("LanguageChangedFromSmartSwitch"),
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            guard let self = self else { return }
+            if let language = notification.object as? NSNumber {
+                Task { @MainActor in
+                    self.isLoadingSettings = true
+                    self.isEnabled = language.intValue == 1
+                    self.isLoadingSettings = false
+                    // No beep sound for smart auto-switch
                 }
             }
         }

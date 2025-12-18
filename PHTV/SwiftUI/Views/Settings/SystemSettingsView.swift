@@ -174,13 +174,16 @@ struct SystemSettingsView: View {
 
     private func resetToDefaults() {
         if let appDelegate = NSApp.delegate as? AppDelegate {
+            // Reset all settings to defaults in UserDefaults (synchronous)
+            // This also updates global variables and calls fillData()
             appDelegate.loadDefaultConfig()
+
+            // Reload AppState properties immediately from UserDefaults
+            // This triggers SwiftUI to update the UI immediately
+            appState.loadSettings()
+
             // Post notification to trigger UI refresh across the app
             NotificationCenter.default.post(name: NSNotification.Name("SettingsReset"), object: nil)
-            // Reload settings with a small delay to ensure UserDefaults is synchronized
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                appState.loadSettings()
-            }
         }
     }
 
