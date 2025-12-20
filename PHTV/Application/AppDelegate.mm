@@ -627,6 +627,12 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
                                                  name:@"SettingsReset"
                                                object:nil];
 
+    // CRITICAL: Handle immediate accessibility permission loss from event tap callback
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(handleAccessibilityRevoked)
+                                                 name:@"AccessibilityPermissionLost"
+                                               object:nil];
+
     // Excluded apps changes: apply immediately (don't wait for app switch)
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(handleExcludedAppsChanged:)

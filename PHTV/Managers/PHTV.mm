@@ -19,6 +19,7 @@
 #import "Engine.h"
 #import "../Application/AppDelegate.h"
 #import "PHTVManager.h"
+#import "../Utils/MJAccessibilityUtils.h"
 
 #define FRONT_APP [[NSWorkspace sharedWorkspace] frontmostApplication].bundleIdentifier
 
@@ -1308,14 +1309,28 @@ extern "C" {
             return event;
         }
 
+        // CRITICAL: Check accessibility permission every 100 events to detect revocation immediately
+        // This prevents running event tap without permission which causes macOS freeze
+        static NSUInteger permissionCheckCounter = 0;
+        if (__builtin_expect(++permissionCheckCounter % 100 == 0, 0)) {
+            if (__builtin_expect(!MJAccessibilityIsEnabled(), 0)) {
+                os_log_error(phtv_log, "🛑 CRITICAL: Accessibility permission lost during event tap!");
+                // Post notification to trigger immediate shutdown on main thread
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    [[NSNotificationCenter defaultCenter] postNotificationName:@"AccessibilityPermissionLost" object:nil];
+                });
+                return event; // Return immediately, don't process this event
+            }
+        }
+
         // Aggressive inline health check every 25 events for near-instant recovery
         // Smart skip: after 1000 healthy checks, reduce frequency to save CPU
         static NSUInteger eventCounter = 0;
         static NSUInteger recoveryCounter = 0;
         static NSUInteger healthyCounter = 0;
-        
+
         NSUInteger checkInterval = (healthyCounter > 1000) ? 100 : 25;
-        
+
         if (__builtin_expect(++eventCounter % checkInterval == 0, 0)) {
             if (__builtin_expect(![PHTVManager isEventTapEnabled], 0)) {
                 healthyCounter = 0; // Reset healthy counter on failure

@@ -94,22 +94,28 @@ static NSUInteger         _tapRecreateCount = 0;
 +(BOOL)stopEventTap {
     if (_isInited) {
         NSLog(@"[EventTap] Stopping...");
-        
-        // Disable the event tap first
-        CGEventTapEnable(eventTap, false);
-        
-        // Remove from run loop
-        CFRunLoopRemoveSource(CFRunLoopGetMain(), runLoopSource, kCFRunLoopCommonModes);
-        CFRelease(runLoopSource);
-        runLoopSource = nil;
-        
+
+        // Disable the event tap first (safe to call even if already disabled)
+        if (eventTap != nil) {
+            CGEventTapEnable(eventTap, false);
+        }
+
+        // Remove from run loop (MUST be on main thread)
+        if (runLoopSource != nil) {
+            CFRunLoopRemoveSource(CFRunLoopGetMain(), runLoopSource, kCFRunLoopCommonModes);
+            CFRelease(runLoopSource);
+            runLoopSource = nil;
+        }
+
         // Invalidate and release the event tap
-        CFMachPortInvalidate(eventTap);
-        CFRelease(eventTap);
-        eventTap = nil;
-        
+        if (eventTap != nil) {
+            CFMachPortInvalidate(eventTap);
+            CFRelease(eventTap);
+            eventTap = nil;
+        }
+
         _isInited = false;
-        
+
         NSLog(@"[EventTap] Stopped successfully");
     }
     return YES;
