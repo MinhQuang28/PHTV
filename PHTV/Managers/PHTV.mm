@@ -256,7 +256,8 @@ extern "C" {
                                                            @"com.microsoft.edgemac.Dev",
                                                            @"com.microsoft.edgemac.Beta",
                                                            @"com.microsoft.Edge.Dev",
-                                                           @"com.microsoft.Edge"]];
+                                                           @"com.microsoft.Edge",
+                                                           @"net.whatsapp.WhatsApp"]];  // WhatsApp Desktop (Electron/Chromium-based)
 
     // Apps that need to FORCE Unicode precomposed (not compound) - Using NSSet for O(1) lookup performance
     // These apps don't handle Unicode combining characters properly
@@ -271,7 +272,8 @@ extern "C" {
                                                       @"com.apple.SecurityAgent",   // Security dialogs
                                                       @"com.raycast.macos",
                                                       @"com.alfredapp.Alfred",
-                                                      @"com.apple.launchpad"]];      // Launchpad/Ứng dụng
+                                                      @"com.apple.launchpad",       // Launchpad/Ứng dụng
+                                                      @"net.whatsapp.WhatsApp"]];   // WhatsApp Desktop (caption field needs step-by-step)
 
     // Apps where Vietnamese input should be disabled (search/launcher apps) - Using NSSet for O(1) lookup performance
     NSSet* _disableVietnameseAppSet = [NSSet setWithArray:@[
@@ -313,7 +315,8 @@ extern "C" {
     __attribute__((always_inline)) static inline void SpotlightTinyDelay(void) {
         // Spotlight/SystemUIServer input fields are timing-sensitive.
         // A tiny delay helps ensure backspace + replacement is applied in order.
-        usleep(8000); // 8ms (empirically needed for Spotlight)
+        // This is only used when AX API fallback to synthetic events (rare)
+        usleep(10000); // 10ms (fallback path - AX API is preferred)
     }
 
     static BOOL ReplaceFocusedTextViaAX(NSInteger backspaceCount, NSString* insertText) {
@@ -1131,10 +1134,21 @@ extern "C" {
             NSString *insertStr = [NSString stringWithCharacters:(const unichar *)_finalCharString length:_finalCharSize];
             int backspaceCount = _phtvPendingBackspaceCount;
             _phtvPendingBackspaceCount = 0;
-            if (ReplaceFocusedTextViaAX(backspaceCount, insertStr)) {
-                return;
+
+            // Retry AX replacement up to 3 times when typing very fast
+            // Spotlight can be busy (searching) causing AX API to fail temporarily
+            BOOL axSucceeded = NO;
+            for (int retry = 0; retry < 3 && !axSucceeded; retry++) {
+                if (retry > 0) {
+                    usleep(5000); // 5ms delay before retry (Spotlight might be busy)
+                }
+                axSucceeded = ReplaceFocusedTextViaAX(backspaceCount, insertStr);
             }
-            // If AX fails, fall back to synthetic events below.
+
+            if (axSucceeded) {
+                return;  // AX replacement succeeded - no need for synthetic events
+            }
+            // If AX fails after retries, fall back to synthetic events below.
             // IMPORTANT: we deferred deletion in the callback; perform it here now.
             if (backspaceCount > 0) {
                 int maxDeletes = backspaceCount;
