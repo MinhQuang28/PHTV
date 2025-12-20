@@ -26,7 +26,13 @@ static inline int PHTVReadIntWithFallback(NSUserDefaults *defaults, NSString *ke
 }
 
 AppDelegate* appDelegate;
+
 extern "C" {
+    // Global function to get AppDelegate instance
+    AppDelegate* _Nullable GetAppDelegateInstance(void) {
+        return appDelegate;
+    }
+
     void OnTableCodeChange(void);
     void initMacroMap(const unsigned char*, const int&);
     void OnInputMethodChanged(void);

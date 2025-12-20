@@ -45,3 +45,14 @@
 
 @end
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+// Global function to get AppDelegate instance
+AppDelegate* _Nullable GetAppDelegateInstance(void);
+
+#ifdef __cplusplus
+}
+#endif
+

@@ -16,6 +16,8 @@ struct SystemSettingsView: View {
     @State private var updateCheckMessage = ""
     @State private var updateCheckIsError = false
     @State private var isCheckingForUpdates = false
+    @State private var updateDownloadUrl: String?
+    @State private var updateCheckTimeoutTask: Task<Void, Never>?
 
     var body: some View {
         ScrollView {
@@ -202,8 +204,9 @@ struct SystemSettingsView: View {
             if !updateCheckIsError && updateCheckMessage.contains("có sẵn") {
                 Button("Hủy", role: .cancel) {}
                 Button("Tải xuống") {
-                    // Prefer dynamic URL from update.json if you later store it in state
-                    if let url = URL(string: "https://github.com/PhamHungTien/PHTV/releases/latest") {
+                    // Use dynamic download URL from backend response
+                    let urlString = updateDownloadUrl ?? "https://github.com/PhamHungTien/PHTV/releases/latest"
+                    if let url = URL(string: urlString) {
                         NSWorkspace.shared.open(url)
                     }
                 }
@@ -237,55 +240,52 @@ struct SystemSettingsView: View {
     }
 
     private func checkForUpdates() {
+        // Cancel any existing timeout task
+        updateCheckTimeoutTask?.cancel()
+
         isCheckingForUpdates = true
         updateCheckMessage = ""
         updateCheckIsError = false
+        updateDownloadUrl = nil
 
-        struct UpdateInfo: Decodable {
-            let latestVersion: String
-            let downloadURL: String?
-            let message: String?
+        // Set up timeout handler (30 seconds)
+        updateCheckTimeoutTask = Task {
+            try? await Task.sleep(nanoseconds: 30_000_000_000) // 30 seconds
+
+            guard !Task.isCancelled else { return }
+
+            await MainActor.run {
+                if isCheckingForUpdates {
+                    isCheckingForUpdates = false
+                    updateCheckMessage = "Timeout: Không nhận được phản hồi từ server sau 30 giây"
+                    updateCheckIsError = true
+                    showingUpdateCheckStatus = true
+                }
+            }
         }
 
-        DispatchQueue.global(qos: .userInitiated).async {
-            // Compute results off the main actor using local immutable copies
-            let computed: (message: String, isError: Bool) = {
-                guard let url = Bundle.main.url(forResource: "update", withExtension: "json"),
-                      let data = try? Data(contentsOf: url) else {
-                    return ("Không tìm thấy thông tin cập nhật trong ứng dụng.", true)
-                }
-
-                do {
-                    let info = try JSONDecoder().decode(UpdateInfo.self, from: data)
-                    let current = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0"
-
-                    let comparisonResult = current.compare(info.latestVersion, options: .numeric)
-
-                    if comparisonResult == .orderedAscending {
-                        // Có bản mới hơn
-                        return ("Có phiên bản \(info.latestVersion) mới hơn phiên bản hiện tại (\(current)). Bạn muốn tải xuống?", false)
-                    } else if comparisonResult == .orderedSame {
-                        // Đang dùng phiên bản mới nhất
-                        return ("Bạn đang sử dụng phiên bản mới nhất (\(current))", false)
-                    } else {
-                        // Version hiện tại cao hơn (development build)
-                        return ("Phiên bản hiện tại (\(current)) mới hơn bản release (\(info.latestVersion))", false)
-                    }
-                } catch {
-                    return ("Không thể đọc thông tin cập nhật: \(error.localizedDescription)", true)
-                }
-            }()
-
+        // Trigger backend to check for updates via GitHub API
+        // Get AppDelegate using global function
+        if let appDelegate = GetAppDelegateInstance() {
+            // Call on main thread to ensure it runs
             DispatchQueue.main.async {
-                self.isCheckingForUpdates = false
-                self.updateCheckMessage = computed.message
-                self.updateCheckIsError = computed.isError
-                self.showingUpdateCheckStatus = true
+                appDelegate.handleCheck(forUpdates: nil)
             }
+        } else {
+            // Show immediate error to user
+            updateCheckTimeoutTask?.cancel()
+            isCheckingForUpdates = false
+            updateCheckMessage = "Lỗi: Không thể lấy AppDelegate instance (app chưa khởi tạo xong)"
+            updateCheckIsError = true
+            showingUpdateCheckStatus = true
         }
     }
 
     private func handleUpdateCheckResponse(_ notification: Notification) {
+        // Cancel timeout task since we received a response
+        updateCheckTimeoutTask?.cancel()
+        updateCheckTimeoutTask = nil
+
         isCheckingForUpdates = false
 
         if let response = notification.object as? [String: Any] {
@@ -294,6 +294,9 @@ struct SystemSettingsView: View {
             }
             if let isError = response["isError"] as? Bool {
                 updateCheckIsError = isError
+            }
+            if let downloadUrl = response["downloadUrl"] as? String {
+                updateDownloadUrl = downloadUrl
             }
         } else {
             updateCheckMessage = "Phiên bản hiện tại là mới nhất"
