@@ -545,7 +545,6 @@ fileprivate func convertToNSColor(_ color: Color) -> NSColor? {
 struct PauseKeyConfigView: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var themeManager: ThemeManager
-    @State private var isRecording = false
 
     // Check if pause key conflicts with restore key
     private var hasPauseRestoreConflict: Bool {
@@ -615,63 +614,46 @@ struct PauseKeyConfigView: View {
 
                 // Key Selection Section
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("Phím tạm dừng")
+                    Text("Chọn phím tạm dừng")
                         .font(.subheadline)
                         .fontWeight(.semibold)
                         .foregroundStyle(.primary)
 
-                    HStack(spacing: 16) {
-                        // Key selector button
-                        Button(action: {
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                                isRecording = true
-                            }
-                        }) {
-                            HStack(spacing: 10) {
-                                Image(systemName: isRecording ? "keyboard.badge.ellipsis" : "keyboard")
-                                    .font(.system(size: 16, weight: .medium))
-                                    .foregroundStyle(isRecording ? themeManager.themeColor : .secondary)
-
-                                Text(isRecording ? "Nhấn phím..." : appState.pauseKeyName)
-                                    .font(.body)
-                                    .foregroundStyle(isRecording ? themeManager.themeColor : .primary)
-                                    .animation(.easeInOut(duration: 0.2), value: appState.pauseKeyName)
-
-                                Spacer()
-                            }
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 10)
-                            .frame(minWidth: 180)
-                            .background(
-                                RoundedRectangle(cornerRadius: 10)
-                                    .fill(isRecording ? themeManager.themeColor.opacity(0.1) : Color(NSColor.controlBackgroundColor))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 10)
-                                            .stroke(isRecording ? themeManager.themeColor : Color.gray.opacity(0.3), lineWidth: 1)
-                                    )
-                            )
-                        }
-                        .buttonStyle(.plain)
-                        .animation(.easeInOut(duration: 0.2), value: isRecording)
-                        .background(PauseKeyEventHandler(isRecording: $isRecording, appState: appState))
-
-                        // Current key display
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Phím hiện tại")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-
-                            Text(appState.pauseKeyName)
-                                .font(.system(.body, design: .rounded))
-                                .fontWeight(.semibold)
-                                .foregroundStyle(.tint)
-                                .animation(.easeInOut(duration: 0.2), value: appState.pauseKeyName)
-                        }
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 8)
-                        .background(
-                            RoundedRectangle(cornerRadius: 10)
-                                .fill(themeManager.themeColor.opacity(0.08))
+                    HStack(spacing: 12) {
+                        PauseKeyButton(
+                            symbol: "⌃",
+                            name: "Control",
+                            keyCode: 59,
+                            selectedKeyCode: $appState.pauseKey,
+                            selectedKeyName: $appState.pauseKeyName
+                        )
+                        PauseKeyButton(
+                            symbol: "⇧",
+                            name: "Shift",
+                            keyCode: 56,
+                            selectedKeyCode: $appState.pauseKey,
+                            selectedKeyName: $appState.pauseKeyName
+                        )
+                        PauseKeyButton(
+                            symbol: "⌘",
+                            name: "Command",
+                            keyCode: 55,
+                            selectedKeyCode: $appState.pauseKey,
+                            selectedKeyName: $appState.pauseKeyName
+                        )
+                        PauseKeyButton(
+                            symbol: "⌥",
+                            name: "Option",
+                            keyCode: 58,
+                            selectedKeyCode: $appState.pauseKey,
+                            selectedKeyName: $appState.pauseKeyName
+                        )
+                        PauseKeyButton(
+                            symbol: "fn",
+                            name: "Fn",
+                            keyCode: 63,
+                            selectedKeyCode: $appState.pauseKey,
+                            selectedKeyName: $appState.pauseKeyName
                         )
                     }
 
@@ -733,136 +715,49 @@ struct PauseKeyConfigView: View {
     }
 }
 
-// MARK: - Pause Key Event Handler
-struct PauseKeyEventHandler: NSViewRepresentable {
-    @Binding var isRecording: Bool
-    var appState: AppState
+// MARK: - Pause Key Button (Radio button style)
+struct PauseKeyButton: View {
+    @EnvironmentObject var themeManager: ThemeManager
+    let symbol: String
+    let name: String
+    let keyCode: UInt16
+    @Binding var selectedKeyCode: UInt16
+    @Binding var selectedKeyName: String
 
-    func makeNSView(context: Context) -> NSView {
-        let view = PauseKeyCaptureView()
-        view.onKeyPress = { keyCode, keyName in
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                appState.pauseKey = keyCode
-                appState.pauseKeyName = keyName
-                isRecording = false
+    private var isSelected: Bool {
+        selectedKeyCode == keyCode
+    }
+
+    var body: some View {
+        Button(action: {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                selectedKeyCode = keyCode
+                selectedKeyName = name
             }
-        }
-        DispatchQueue.main.async {
-            context.coordinator.view = view
-        }
-        return view
-    }
+        }) {
+            VStack(spacing: 6) {
+                Text(symbol)
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundStyle(isSelected ? .white : .primary)
 
-    func updateNSView(_ nsView: NSView, context: Context) {
-        if let keyView = nsView as? PauseKeyCaptureView {
-            keyView.isRecording = isRecording
-        }
-    }
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator()
-    }
-
-    class Coordinator {
-        var view: PauseKeyCaptureView?
-    }
-}
-
-class PauseKeyCaptureView: NSView {
-    var onKeyPress: ((UInt16, String) -> Void)?
-    var isRecording = false {
-        didSet {
-            if isRecording {
-                window?.makeFirstResponder(self)
+                Text(name)
+                    .font(.caption2)
+                    .foregroundStyle(isSelected ? .white.opacity(0.9) : .secondary)
             }
+            .frame(width: 70, height: 56)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(isSelected ? themeManager.themeColor : Color(NSColor.controlBackgroundColor))
+                    .shadow(color: isSelected ? themeManager.themeColor.opacity(0.3) : Color.clear, radius: 4, x: 0, y: 2)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(isSelected ? Color.clear : Color.gray.opacity(0.25), lineWidth: 1)
+            )
+            .scaleEffect(isSelected ? 1.0 : 0.98)
         }
-    }
-
-    override var acceptsFirstResponder: Bool { true }
-
-    override func keyDown(with event: NSEvent) {
-        guard isRecording else {
-            super.keyDown(with: event)
-            return
-        }
-
-        let keyCode = UInt16(event.keyCode)
-        let keyName = getKeyName(for: keyCode)
-
-        // Call with animation on main thread
-        DispatchQueue.main.async { [weak self] in
-            self?.onKeyPress?(keyCode, keyName)
-        }
-    }
-
-    private func getKeyName(for keyCode: UInt16) -> String {
-        // Map common keycodes to readable names
-        switch Int(keyCode) {
-        case kVK_ANSI_A: return "A"
-        case kVK_ANSI_B: return "B"
-        case kVK_ANSI_C: return "C"
-        case kVK_ANSI_D: return "D"
-        case kVK_ANSI_E: return "E"
-        case kVK_ANSI_F: return "F"
-        case kVK_ANSI_G: return "G"
-        case kVK_ANSI_H: return "H"
-        case kVK_ANSI_I: return "I"
-        case kVK_ANSI_J: return "J"
-        case kVK_ANSI_K: return "K"
-        case kVK_ANSI_L: return "L"
-        case kVK_ANSI_M: return "M"
-        case kVK_ANSI_N: return "N"
-        case kVK_ANSI_O: return "O"
-        case kVK_ANSI_P: return "P"
-        case kVK_ANSI_Q: return "Q"
-        case kVK_ANSI_R: return "R"
-        case kVK_ANSI_S: return "S"
-        case kVK_ANSI_T: return "T"
-        case kVK_ANSI_U: return "U"
-        case kVK_ANSI_V: return "V"
-        case kVK_ANSI_W: return "W"
-        case kVK_ANSI_X: return "X"
-        case kVK_ANSI_Y: return "Y"
-        case kVK_ANSI_Z: return "Z"
-        case kVK_ANSI_0: return "0"
-        case kVK_ANSI_1: return "1"
-        case kVK_ANSI_2: return "2"
-        case kVK_ANSI_3: return "3"
-        case kVK_ANSI_4: return "4"
-        case kVK_ANSI_5: return "5"
-        case kVK_ANSI_6: return "6"
-        case kVK_ANSI_7: return "7"
-        case kVK_ANSI_8: return "8"
-        case kVK_ANSI_9: return "9"
-        case kVK_Space: return "Space"
-        case kVK_Return: return "Return"
-        case kVK_Tab: return "Tab"
-        case kVK_Delete: return "Delete"
-        case kVK_Escape: return "Esc"
-        case 58: return "Option"      // Left Option
-        case 61: return "Option"      // Right Option
-        case 59: return "Control"     // Left Control
-        case 62: return "Control"     // Right Control
-        case 56: return "Shift"       // Left Shift
-        case 60: return "Shift"       // Right Shift
-        case 55: return "Command"     // Left Command
-        case 54: return "Command"     // Right Command
-        case 63: return "Fn"          // Function key
-        case kVK_F1: return "F1"
-        case kVK_F2: return "F2"
-        case kVK_F3: return "F3"
-        case kVK_F4: return "F4"
-        case kVK_F5: return "F5"
-        case kVK_F6: return "F6"
-        case kVK_F7: return "F7"
-        case kVK_F8: return "F8"
-        case kVK_F9: return "F9"
-        case kVK_F10: return "F10"
-        case kVK_F11: return "F11"
-        case kVK_F12: return "F12"
-        case kVK_CapsLock: return "Caps Lock"
-        default: return "Key \(keyCode)"
-        }
+        .buttonStyle(.plain)
+        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
     }
 }
 
