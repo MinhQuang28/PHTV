@@ -219,19 +219,19 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
 }
 
 - (void)startAccessibilityMonitoring {
-    // Monitor accessibility status with smart interval
-    // Start at 3s, increase to 10s once stable
-    self.accessibilityMonitor = [NSTimer scheduledTimerWithTimeInterval:3.0
+    // Monitor accessibility status with fast interval (1s) to detect revocation quickly
+    // CRITICAL: Fast monitoring prevents macOS freeze when permission is revoked
+    self.accessibilityMonitor = [NSTimer scheduledTimerWithTimeInterval:1.0
                                                                   target:self
                                                                 selector:@selector(checkAccessibilityStatus)
                                                                 userInfo:nil
                                                                  repeats:YES];
-    
+
     // Set initial state
     self.wasAccessibilityEnabled = MJAccessibilityIsEnabled();
-    
+
     #ifdef DEBUG
-    NSLog(@"[Accessibility] Started monitoring (interval: 3s)");
+    NSLog(@"[Accessibility] Started monitoring (interval: 1s for fast revocation detection)");
     #endif
 }
 
@@ -290,19 +290,9 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
         [self handleAccessibilityRevoked];
     }
     else if (isEnabled) {
-        // Stable state - after 10 stable checks, slow down monitoring
+        // Keep checking at 1s interval to detect permission revocation quickly
+        // Do NOT slow down - fast monitoring is critical to prevent macOS freeze
         self.accessibilityStableCount++;
-        if (self.accessibilityStableCount == 10) {
-            [self.accessibilityMonitor invalidate];
-            self.accessibilityMonitor = [NSTimer scheduledTimerWithTimeInterval:10.0
-                                                                          target:self
-                                                                        selector:@selector(checkAccessibilityStatus)
-                                                                        userInfo:nil
-                                                                         repeats:YES];
-            #ifdef DEBUG
-            NSLog(@"[Accessibility] Stable - reducing check frequency to 10s");
-            #endif
-        }
     }
     
     // Update state
@@ -394,15 +384,14 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
 }
 
 - (void)handleAccessibilityRevoked {
-    // CRITICAL: Stop event tap immediately to prevent system freeze
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
-        if ([PHTVManager isInited]) {
-            NSLog(@"🛑 Stopping event tap to prevent system freeze...");
-            [PHTVManager stopEventTap];
-        }
-    });
-    
-    // Show alert on main thread
+    // CRITICAL: Stop event tap IMMEDIATELY on MAIN THREAD to prevent system freeze
+    // CFRunLoopRemoveSource MUST be called on the same thread it was added (main thread)
+    if ([PHTVManager isInited]) {
+        NSLog(@"🛑 CRITICAL: Accessibility revoked! Stopping event tap immediately...");
+        [PHTVManager stopEventTap];
+    }
+
+    // Show alert
     dispatch_async(dispatch_get_main_queue(), ^{
         NSAlert *alert = [[NSAlert alloc] init];
         [alert setMessageText:@"⚠️  Quyền trợ năng đã bị tắt!"];
