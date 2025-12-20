@@ -628,13 +628,6 @@ struct PauseKeyConfigView: View {
                             selectedKeyName: $appState.pauseKeyName
                         )
                         PauseKeyButton(
-                            symbol: "⇧",
-                            name: "Shift",
-                            keyCode: 56,
-                            selectedKeyCode: $appState.pauseKey,
-                            selectedKeyName: $appState.pauseKeyName
-                        )
-                        PauseKeyButton(
                             symbol: "⌘",
                             name: "Command",
                             keyCode: 55,
