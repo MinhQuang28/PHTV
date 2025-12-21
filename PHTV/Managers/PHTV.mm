@@ -261,9 +261,13 @@ extern "C" {
 
     // Apps that need to FORCE Unicode precomposed (not compound) - Using NSSet for O(1) lookup performance
     // These apps don't handle Unicode combining characters properly
+    // Note: WhatsApp removed - it needs precomposed but NOT Spotlight-style AX/per-char handling
     NSSet* _forcePrecomposedAppSet = [NSSet setWithArray:@[@"com.apple.Spotlight",
-                                                            @"com.apple.systemuiserver",  // Spotlight runs under SystemUIServer
-                                                            @"net.whatsapp.WhatsApp"]];    // WhatsApp needs precomposed Unicode
+                                                            @"com.apple.systemuiserver"]];  // Spotlight runs under SystemUIServer
+
+    // Apps that need precomposed Unicode but should use normal batched sending (not AX API)
+    // These are Electron/web apps that don't support AX text replacement
+    NSSet* _precomposedBatchedAppSet = [NSSet setWithArray:@[@"net.whatsapp.WhatsApp"]];
 
     //app which needs step by step key sending (timing sensitive apps) - Using NSSet for O(1) lookup performance
     NSSet* _stepByStepAppSet = [NSSet setWithArray:@[// Commented out for testing Vietnamese input:
@@ -304,6 +308,11 @@ extern "C" {
 
     __attribute__((always_inline)) static inline BOOL isSpotlightLikeApp(NSString* bundleId) {
         return bundleIdMatchesAppSet(bundleId, _forcePrecomposedAppSet);
+    }
+
+    // Check if app needs precomposed Unicode but with batched sending (not AX API)
+    __attribute__((always_inline)) static inline BOOL needsPrecomposedBatched(NSString* bundleId) {
+        return bundleIdMatchesAppSet(bundleId, _precomposedBatchedAppSet);
     }
 
     // Cache the effective target bundle id for the current event tap callback.
@@ -1047,7 +1056,11 @@ extern "C" {
         // Treat as Spotlight target if the callback decided to use HID/Spotlight-safe path.
         // This covers cases where Spotlight is active but bundle-id matching is imperfect.
         BOOL isSpotlightTarget = _phtvPostToHIDTap || isSpotlightLikeApp(effectiveTarget);
-        BOOL forcePrecomposed = (vCodeTable == 3) && isSpotlightTarget;
+        // WhatsApp and similar apps need precomposed Unicode but with batched sending (not AX API)
+        BOOL isPrecomposedBatched = needsPrecomposedBatched(effectiveTarget);
+        // Force precomposed for: Unicode Compound (code 3) on Spotlight, OR any Unicode on WhatsApp-like apps
+        BOOL forcePrecomposed = ((vCodeTable == 3) && isSpotlightTarget) ||
+                                 ((vCodeTable == 0 || vCodeTable == 3) && isPrecomposedBatched);
         
         if (_newCharSize > 0) {
             for (_k = dataFromMacro ? offset : pData->newCharCount - 1 - offset;
@@ -1699,9 +1712,12 @@ extern "C" {
                 }
                 return event;
             } else if (pData->code == vWillProcess || pData->code == vRestore || pData->code == vRestoreAndStartNewSession) { //handle result signal
-                
+
+                // Check if this is a special app (Spotlight-like or WhatsApp-like)
+                BOOL isSpecialApp = isSpotlightLikeApp(effectiveBundleId) || needsPrecomposedBatched(effectiveBundleId);
+
                 //fix autocomplete
-                if (vFixRecommendBrowser && pData->extCode != 4 && !isSpotlightLikeApp(effectiveBundleId)) {
+                if (vFixRecommendBrowser && pData->extCode != 4 && !isSpecialApp) {
                     if (vFixChromiumBrowser && [_unicodeCompoundAppSet containsObject:effectiveBundleId]) {
                         if (pData->backspaceCount > 0) {
                             SendShiftAndLeftArrow();
@@ -1714,7 +1730,7 @@ extern "C" {
 
                     }
                 }
-                
+
                 //send backspace
                 if (pData->backspaceCount > 0 && pData->backspaceCount < MAX_BUFF) {
                     if (isSpotlightLikeApp(effectiveBundleId)) {
