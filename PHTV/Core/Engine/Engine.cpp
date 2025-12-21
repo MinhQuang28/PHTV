@@ -1328,7 +1328,8 @@ void vEnglishMode(const vKeyEventState& state, const Uint16& data, const bool& i
     if (state == vKeyEventState::MouseDown || (otherControlKey && !isCaps)) {
         hMacroKey.clear();
         _willTempOffEngine = false;
-    } else if (data == KEY_SPACE) {
+    } else if (data == KEY_SPACE || isMacroBreakCode(data)) {
+        // Check macro for SPACE and other macro break codes (Enter, comma, dot, etc.)
         if (!_hasHandledMacro && findMacro(hMacroKey, hMacroData)) {
             hCode = vReplaceMaro;
             hBPC = (Byte)hMacroKey.size();
