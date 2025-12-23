@@ -37,6 +37,7 @@
 - **Gõ tắt nhanh (Quick Telex)** - cc→ch, gg→gi, kk→kh, nn→ng, qq→qu, pp→ph, tt→th
 - **Phụ âm đầu/cuối nhanh** - f→ph, j→gi, w→qu (đầu) và g→ng, h→nh, k→ch (cuối)
 - **Tự động viết hoa** - Viết hoa chữ cái đầu câu sau dấu chấm
+- **Tự động khôi phục từ tiếng Anh** - Nhận diện và khôi phục từ tiếng Anh khi gõ nhầm (VD: "tẻminal" → "terminal")
 
 ### Macro (Gõ tắt)
 - **Gõ tắt thông minh** - Định nghĩa từ viết tắt tùy ý (VD: "btw" → "by the way")
