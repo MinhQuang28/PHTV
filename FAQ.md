@@ -2,7 +2,7 @@
 
 # ❓ FAQ - Câu hỏi thường gặp
 
-**Giải đáp thắc mắc về PHTV**
+**Giải đáp thắc mắc về PHTV — Precision Hybrid Typing Vietnamese**
 
 [🏠 Trang chủ](README.md) • [📦 Cài đặt](INSTALL.md) • [🤝 Đóng góp](CONTRIBUTING.md)
 

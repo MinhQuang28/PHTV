@@ -2,7 +2,7 @@
 
 # 📋 Quy tắc ứng xử
 
-**Code of Conduct - Tạo môi trường cộng đồng thân thiện**
+**PHTV — Precision Hybrid Typing Vietnamese | Code of Conduct**
 
 [🏠 Trang chủ](README.md) • [🤝 Đóng góp](CONTRIBUTING.md)
 

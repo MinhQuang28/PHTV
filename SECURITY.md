@@ -2,7 +2,7 @@
 
 # 🔒 Chính sách bảo mật
 
-**Security Policy - Báo cáo lỗ hổng bảo mật**
+**PHTV — Precision Hybrid Typing Vietnamese | Security Policy**
 
 [🏠 Trang chủ](README.md) • [📧 Email](mailto:hungtien10a7@gmail.com)
 

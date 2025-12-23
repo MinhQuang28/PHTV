@@ -2,7 +2,7 @@
 
 # 📦 Hướng dẫn cài đặt PHTV
 
-**Cài đặt bộ gõ tiếng Việt cho macOS trong 3 phút**
+**PHTV — Precision Hybrid Typing Vietnamese | Cài đặt bộ gõ tiếng Việt cho macOS trong 3 phút**
 
 [🏠 Trang chủ](README.md) • [💬 FAQ](FAQ.md) • [🐛 Báo lỗi](../../issues)
 

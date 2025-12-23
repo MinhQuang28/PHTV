@@ -2,7 +2,7 @@
 
 <img src="PHTV/Resources/icon.png" alt="PHTV Icon" width="128" height="128">
 
-# PHTV
+# PHTV — Precision Hybrid Typing Vietnamese
 
 ### Bộ gõ tiếng Việt hiện đại cho macOS
 
@@ -20,7 +20,7 @@
 
 ## Giới thiệu
 
-PHTV là bộ gõ tiếng Việt **offline, nhanh, và riêng tư** cho macOS 14+. Được phát triển bằng Swift/SwiftUI với engine C++ từ OpenKey, mang đến trải nghiệm gõ tiếng Việt mượt mà và tích hợp sâu vào hệ thống.
+**PHTV (Precision Hybrid Typing Vietnamese)** là bộ gõ tiếng Việt **offline, nhanh, và riêng tư** cho macOS 14+. Được phát triển bằng Swift/SwiftUI với engine C++ từ OpenKey, mang đến trải nghiệm gõ tiếng Việt mượt mà và tích hợp sâu vào hệ thống.
 
 ## Tính năng
 

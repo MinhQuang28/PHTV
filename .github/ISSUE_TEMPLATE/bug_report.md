@@ -1,6 +1,6 @@
 ---
 name: Bug Report / Báo cáo Lỗi
-about: Báo cáo lỗi để giúp chúng tôi cải thiện PHTV
+about: Báo cáo lỗi để giúp chúng tôi cải thiện PHTV — Precision Hybrid Typing Vietnamese
 title: '[BUG] '
 labels: bug
 assignees: ''

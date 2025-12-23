@@ -2,7 +2,7 @@
 
 # 🤝 Hướng dẫn Đóng góp
 
-**Cảm ơn bạn muốn đóng góp cho PHTV!**
+**Cảm ơn bạn muốn đóng góp cho PHTV — Precision Hybrid Typing Vietnamese!**
 
 [🏠 Trang chủ](README.md) • [📋 Code of Conduct](CODE_OF_CONDUCT.md) • [🐛 Issues](../../issues)
 

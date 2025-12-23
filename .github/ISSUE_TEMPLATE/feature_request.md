@@ -1,6 +1,6 @@
 ---
 name: Feature Request / Đề xuất Tính năng
-about: Đề xuất tính năng mới cho PHTV
+about: Đề xuất tính năng mới cho PHTV — Precision Hybrid Typing Vietnamese
 title: '[FEATURE] '
 labels: enhancement
 assignees: ''

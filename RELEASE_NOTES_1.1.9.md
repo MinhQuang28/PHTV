@@ -1,5 +1,7 @@
 # PHTV v1.1.9 Release Notes
 
+**PHTV — Precision Hybrid Typing Vietnamese**
+
 ## Sửa lỗi
 
 ### Macro (Gõ tắt)
