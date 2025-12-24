@@ -113,6 +113,7 @@ static bool _isCaps = false;
 static int _spaceCount = 0; //add: July 30th, 2019
 static bool _hasHandledMacro = false; //for macro flag August 9th, 2019
 static Byte _upperCaseStatus = 0; //for Write upper case for the first letter; 2: will upper case
+static bool _shouldUpperCaseEnglishRestore = false; //track if English restore should uppercase first char
 static bool _isCharKeyCode;
 static vector<Uint32> _specialChar;
 static bool _useSpellCheckingBefore;
@@ -462,6 +463,7 @@ void startNewSession() {
     _stateIndex = 0;
     _hasHandledMacro = false;
     _hasHandleQuickConsonant = false;
+    _shouldUpperCaseEnglishRestore = false;
     _longWordHelper.clear();
 }
 
@@ -1412,6 +1414,12 @@ void vKeyHandleEvent(const vKeyEvent& event,
                 TypingWord[i] = KeyStates[i];
                 hData[_stateIndex - 1 - i] = KeyStates[i];
             }
+            // Apply uppercase first character if enabled
+            // Use _shouldUpperCaseEnglishRestore which was set when first char was typed
+            if (vUpperCaseFirstChar && _shouldUpperCaseEnglishRestore && _stateIndex > 0) {
+                hData[_stateIndex - 1] |= CAPS_MASK;
+            }
+            _shouldUpperCaseEnglishRestore = false;
             _index = _stateIndex;
         } else if (vRestoreIfWrongSpelling && isWordBreak(event, state, data)) { //restore key if wrong spelling with break-key
             if (!tempDisableKey && vCheckSpelling) {
@@ -1484,8 +1492,18 @@ void vKeyHandleEvent(const vKeyEvent& event,
                 TypingWord[i] = KeyStates[i];
                 hData[_stateIndex - 1 - i] = KeyStates[i];
             }
+            // Apply uppercase first character if enabled
+            // Use _shouldUpperCaseEnglishRestore which was set when first char was typed
+            if (vUpperCaseFirstChar && _shouldUpperCaseEnglishRestore && _stateIndex > 0) {
+                hData[_stateIndex - 1] |= CAPS_MASK;
+            }
+            _shouldUpperCaseEnglishRestore = false;
             _index = _stateIndex;
             _spaceCount++;
+            // Reset session after restore to prevent re-triggering on next key (e.g., arrow keys)
+            // This is different from vRestoreAndStartNewSession which also sends the break key
+            _index = 0;
+            _stateIndex = 0;
         } else if (vRestoreIfWrongSpelling && tempDisableKey && !_hasHandledMacro) { //restore key if wrong spelling
             if (!checkRestoreIfWrongSpelling(vRestore)) {
                 hCode = vDoNothing;
@@ -1628,6 +1646,8 @@ void vKeyHandleEvent(const vKeyEvent& event,
         if (vUpperCaseFirstChar) {
             if (_index == 1 && _upperCaseStatus == 2) {
                 upperCaseFirstCharacter();
+                // Track for English restore - in case Vietnamese transform didn't happen
+                _shouldUpperCaseEnglishRestore = true;
             }
             _upperCaseStatus = 0;
         }

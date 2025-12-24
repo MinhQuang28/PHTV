@@ -349,20 +349,11 @@ extern "C" {
     static int64_t _phtvKeyboardType = 0;
     static int _phtvPendingBackspaceCount = 0;
 
-    // Track expected text length after AX replacement to detect stale reads
-    static NSInteger _phtvExpectedTextLength = -1;
-    static uint64_t _phtvLastAXReplaceTime = 0;
-
     __attribute__((always_inline)) static inline void SpotlightTinyDelay(void) {
-        // Spotlight/SystemUIServer input fields are timing-sensitive.
-        // Reduced from 10ms to 3ms for faster response
-        usleep(3000); // 3ms (fallback path - AX API is preferred)
+        usleep(3000); // 3ms delay for timing-sensitive operations
     }
 
-    __attribute__((always_inline)) static inline uint64_t GetCurrentTimeUs(void) {
-        return clock_gettime_nsec_np(CLOCK_MONOTONIC_RAW) / 1000; // microseconds
-    }
-
+    // Simple and reliable: always read fresh from AX, no tracking
     static BOOL ReplaceFocusedTextViaAX(NSInteger backspaceCount, NSString* insertText) {
         if (backspaceCount < 0) backspaceCount = 0;
         if (insertText == nil) insertText = @"";
@@ -372,122 +363,61 @@ extern "C" {
         AXError error = AXUIElementCopyAttributeValue(systemWide, kAXFocusedUIElementAttribute, (CFTypeRef *)&focusedElement);
         CFRelease(systemWide);
         if (error != kAXErrorSuccess || focusedElement == NULL) {
-#ifdef DEBUG
-            PHTVSpotlightDebugLog([NSString stringWithFormat:@"AX focus failed err=%d", (int)error]);
-#endif
             return NO;
         }
 
-        // Wait for Spotlight to sync if we recently made a replacement
-        // This prevents reading stale text when typing fast
-        // OPTIMIZED: Use microsecond timing and shorter polls
-        uint64_t nowUs = GetCurrentTimeUs();
-        uint64_t timeSinceLastReplaceUs = nowUs - _phtvLastAXReplaceTime;
-        if (_phtvExpectedTextLength >= 0 && timeSinceLastReplaceUs < 30000) { // 30ms window
-            // Fast polling: max 4 attempts, 2ms each = 8ms max
-            for (int pollAttempt = 0; pollAttempt < 4; pollAttempt++) {
-                CFTypeRef checkValueRef = NULL;
-                AXError checkErr = AXUIElementCopyAttributeValue(focusedElement, kAXValueAttribute, &checkValueRef);
-                if (checkErr == kAXErrorSuccess && checkValueRef != NULL) {
-                    NSInteger currentLen = 0;
-                    if (CFGetTypeID(checkValueRef) == CFStringGetTypeID()) {
-                        currentLen = (NSInteger)CFStringGetLength((CFStringRef)checkValueRef);
-                    }
-                    CFRelease(checkValueRef);
-
-                    if (currentLen == _phtvExpectedTextLength) {
-                        break; // Spotlight has synced
-                    }
-                }
-                usleep(2000); // 2ms between polls (reduced from 5ms)
-            }
-        }
-
+        // Read current value
         CFTypeRef valueRef = NULL;
         error = AXUIElementCopyAttributeValue(focusedElement, kAXValueAttribute, &valueRef);
         if (error != kAXErrorSuccess) {
-#ifdef DEBUG
-            PHTVSpotlightDebugLog([NSString stringWithFormat:@"AX value read failed err=%d", (int)error]);
-#endif
             CFRelease(focusedElement);
             return NO;
         }
+        NSString *valueStr = (valueRef && CFGetTypeID(valueRef) == CFStringGetTypeID()) ? (__bridge NSString *)valueRef : @"";
 
-        NSString *valueStr = nil;
-        if (valueRef != NULL && CFGetTypeID(valueRef) == CFStringGetTypeID()) {
-            valueStr = (__bridge NSString *)valueRef;
-        } else {
-            valueStr = @"";
-        }
-
+        // Read caret position
         CFTypeRef rangeRef = NULL;
+        NSInteger caretLocation = (NSInteger)valueStr.length;
         error = AXUIElementCopyAttributeValue(focusedElement, kAXSelectedTextRangeAttribute, &rangeRef);
-        if (error != kAXErrorSuccess || rangeRef == NULL || CFGetTypeID(rangeRef) != AXValueGetTypeID()) {
-#ifdef DEBUG
-            PHTVSpotlightDebugLog([NSString stringWithFormat:@"AX selectedRange read failed err=%d typeOk=%d", (int)error, (rangeRef != NULL && CFGetTypeID(rangeRef) == AXValueGetTypeID())]);
-#endif
-            if (valueRef) CFRelease(valueRef);
-            CFRelease(focusedElement);
-            if (rangeRef) CFRelease(rangeRef);
-            return NO;
+        if (error == kAXErrorSuccess && rangeRef && CFGetTypeID(rangeRef) == AXValueGetTypeID()) {
+            CFRange sel;
+            if (AXValueGetValue((AXValueRef)rangeRef, PHTV_AXVALUE_CFRANGE_TYPE, &sel)) {
+                caretLocation = (NSInteger)sel.location;
+            }
         }
+        if (rangeRef) CFRelease(rangeRef);
 
-        CFRange selection = CFRangeMake(0, 0);
-        if (!AXValueGetValue((AXValueRef)rangeRef, PHTV_AXVALUE_CFRANGE_TYPE, &selection)) {
-#ifdef DEBUG
-            PHTVSpotlightDebugLog(@"AX range decode failed");
-#endif
-            if (valueRef) CFRelease(valueRef);
-            CFRelease(rangeRef);
-            CFRelease(focusedElement);
-            return NO;
-        }
-
-        NSInteger caretLocation = (NSInteger)selection.location;
+        // Clamp
         if (caretLocation < 0) caretLocation = 0;
         if (caretLocation > (NSInteger)valueStr.length) caretLocation = (NSInteger)valueStr.length;
 
+        // Calculate replacement
         NSInteger start = caretLocation - backspaceCount;
         if (start < 0) start = 0;
         NSInteger len = caretLocation - start;
+        if (start + len > (NSInteger)valueStr.length) len = (NSInteger)valueStr.length - start;
         if (len < 0) len = 0;
-        if (start + len > (NSInteger)valueStr.length) {
-            len = (NSInteger)valueStr.length - start;
-            if (len < 0) len = 0;
-        }
 
-        NSString *newValue = [valueStr stringByReplacingCharactersInRange:NSMakeRange((NSUInteger)start, (NSUInteger)len)
-                                                              withString:insertText];
+        NSString *newValue = [valueStr stringByReplacingCharactersInRange:NSMakeRange(start, len) withString:insertText];
 
-        AXError setValueErr = AXUIElementSetAttributeValue(focusedElement, kAXValueAttribute, (__bridge CFTypeRef)newValue);
-        if (setValueErr != kAXErrorSuccess) {
-#ifdef DEBUG
-            PHTVSpotlightDebugLog([NSString stringWithFormat:@"AX value write failed err=%d", (int)setValueErr]);
-#endif
+        // Write new value
+        if (AXUIElementSetAttributeValue(focusedElement, kAXValueAttribute, (__bridge CFTypeRef)newValue) != kAXErrorSuccess) {
             if (valueRef) CFRelease(valueRef);
-            CFRelease(rangeRef);
             CFRelease(focusedElement);
             return NO;
         }
 
-        CFRange newSel = CFRangeMake(start + (NSInteger)insertText.length, 0);
+        // Set caret position
+        NSInteger newCaret = start + (NSInteger)insertText.length;
+        CFRange newSel = CFRangeMake(newCaret, 0);
         AXValueRef newRange = AXValueCreate(PHTV_AXVALUE_CFRANGE_TYPE, &newSel);
-        if (newRange != NULL) {
+        if (newRange) {
             AXUIElementSetAttributeValue(focusedElement, kAXSelectedTextRangeAttribute, newRange);
             CFRelease(newRange);
         }
 
-        // Track expected text length for next call (microseconds for precision)
-        _phtvExpectedTextLength = (NSInteger)newValue.length;
-        _phtvLastAXReplaceTime = GetCurrentTimeUs();
-
         if (valueRef) CFRelease(valueRef);
-        CFRelease(rangeRef);
         CFRelease(focusedElement);
-
-    #ifdef DEBUG
-        PHTVSpotlightDebugLog([NSString stringWithFormat:@"AX replace ok del=%ld ins=%ld newLen=%ld", (long)backspaceCount, (long)insertText.length, (long)newValue.length]);
-    #endif
         return YES;
     }
 
@@ -712,9 +642,6 @@ extern "C" {
         _willContinuteSending = false;
         _willSendControlKey = false;
         _hasJustUsedHotKey = false;
-
-        // Reset Spotlight AX sync tracking
-        _phtvExpectedTextLength = -1;
 
         // Release barrier: ensure state reset is visible to all threads
         __atomic_thread_fence(__ATOMIC_RELEASE);
@@ -1213,55 +1140,37 @@ extern "C" {
         }
 
         if (isSpotlightTarget) {
-            // Prefer AX value replacement for Spotlight/SystemUIServer.
-            // This avoids the search field mis-handling synthetic backspace + unicode replacement.
+            // Try AX API first - it's atomic and most reliable when it works
             NSString *insertStr = [NSString stringWithCharacters:(const unichar *)_finalCharString length:_finalCharSize];
             int backspaceCount = _phtvPendingBackspaceCount;
             _phtvPendingBackspaceCount = 0;
 
-            // Try AX replacement once - no retries to maximize speed
-            // The sync polling in ReplaceFocusedTextViaAX handles timing issues
             BOOL axSucceeded = ReplaceFocusedTextViaAX(backspaceCount, insertStr);
-
             if (axSucceeded) {
-                return;  // AX replacement succeeded - no need for synthetic events
+                return;
             }
-            // If AX fails after retries, fall back to synthetic events below.
-            // IMPORTANT: we deferred deletion in the callback; perform it here now.
-            if (backspaceCount > 0) {
-                int maxDeletes = backspaceCount;
-                for (int del = 0; del < maxDeletes; del++) {
-                    if (IS_DOUBLE_CODE(vCodeTable) && _syncKey.size() == 0) {
-                        break;
-                    }
-                    SendBackspace();
-                }
+
+            // AX failed - fallback to synthetic events
+            for (int del = 0; del < backspaceCount; del++) {
+                SendBackspace();
             }
-        }
-        
-        if (isSpotlightTarget) {
-            // Spotlight's search field is sensitive to batched Unicode replacement.
-            // Send as per-character Unicode events to avoid mark reordering/duplication.
-            for (int idx = 0; idx < _finalCharSize; idx++) {
-                UniChar oneChar = (UniChar)_finalCharString[idx];
-                _newEventDown = CGEventCreateKeyboardEvent(myEventSource, 0, true);
-                _newEventUp = CGEventCreateKeyboardEvent(myEventSource, 0, false);
-                if (_phtvKeyboardType != 0) {
-                    CGEventSetIntegerValueField(_newEventDown, kCGKeyboardEventKeyboardType, _phtvKeyboardType);
-                    CGEventSetIntegerValueField(_newEventUp, kCGKeyboardEventKeyboardType, _phtvKeyboardType);
-                }
-                CGEventFlags uFlags = CGEventGetFlags(_newEventDown);
-                uFlags |= kCGEventFlagMaskNonCoalesced;
-                CGEventSetFlags(_newEventDown, uFlags);
-                CGEventSetFlags(_newEventUp, uFlags);
-                CGEventKeyboardSetUnicodeString(_newEventDown, 1, &oneChar);
-                CGEventKeyboardSetUnicodeString(_newEventUp, 1, &oneChar);
-                PostSyntheticEvent(_proxy, _newEventDown);
-                PostSyntheticEvent(_proxy, _newEventUp);
-                SpotlightTinyDelay();
-                CFRelease(_newEventDown);
-                CFRelease(_newEventUp);
+
+            _newEventDown = CGEventCreateKeyboardEvent(myEventSource, 0, true);
+            _newEventUp = CGEventCreateKeyboardEvent(myEventSource, 0, false);
+            if (_phtvKeyboardType != 0) {
+                CGEventSetIntegerValueField(_newEventDown, kCGKeyboardEventKeyboardType, _phtvKeyboardType);
+                CGEventSetIntegerValueField(_newEventUp, kCGKeyboardEventKeyboardType, _phtvKeyboardType);
             }
+            CGEventFlags uFlags = CGEventGetFlags(_newEventDown) | kCGEventFlagMaskNonCoalesced;
+            CGEventSetFlags(_newEventDown, uFlags);
+            CGEventSetFlags(_newEventUp, uFlags);
+            CGEventKeyboardSetUnicodeString(_newEventDown, _finalCharSize, _finalCharString);
+            CGEventKeyboardSetUnicodeString(_newEventUp, _finalCharSize, _finalCharString);
+            PostSyntheticEvent(_proxy, _newEventDown);
+            PostSyntheticEvent(_proxy, _newEventUp);
+            CFRelease(_newEventDown);
+            CFRelease(_newEventUp);
+            return;
         } else {
             _newEventDown = CGEventCreateKeyboardEvent(myEventSource, 0, true);
             _newEventUp = CGEventCreateKeyboardEvent(myEventSource, 0, false);
