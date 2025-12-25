@@ -17,6 +17,8 @@ struct AdvancedSettingsView: View {
     @State private var alertTitle = ""
     @State private var isConverting = false
     @State private var convertProgress = ""
+    @State private var canOpenTerminal = false
+    @State private var wasHomebrewInstall = false
 
     enum ClaudeCodeStatus {
         case checking
@@ -105,7 +107,14 @@ struct AdvancedSettingsView: View {
             checkClaudeCodeStatus()
         }
         .alert(alertTitle, isPresented: $showingAlert) {
-            Button("OK", role: .cancel) {}
+            if canOpenTerminal {
+                Button("Mở Terminal") {
+                    ClaudeCodePatcher.shared.openTerminalWithInstallCommand(isHomebrew: wasHomebrewInstall)
+                }
+                Button("Đóng", role: .cancel) {}
+            } else {
+                Button("OK", role: .cancel) {}
+            }
         } message: {
             Text(alertMessage)
         }
@@ -195,6 +204,7 @@ struct AdvancedSettingsView: View {
     }
 
     private func applyClaudeCodePatch() {
+        canOpenTerminal = false
         let result = ClaudeCodePatcher.shared.applyPatch()
         switch result {
         case .success(let message):
@@ -210,6 +220,7 @@ struct AdvancedSettingsView: View {
     }
 
     private func removeClaudeCodePatch() {
+        canOpenTerminal = false
         let result = ClaudeCodePatcher.shared.removePatch()
         switch result {
         case .success(let message):
@@ -231,6 +242,7 @@ struct AdvancedSettingsView: View {
     private func convertToNpm() {
         isConverting = true
         convertProgress = "Đang bắt đầu..."
+        wasHomebrewInstall = (claudeCodeStatus == .homebrewInstall)
 
         ClaudeCodePatcher.shared.reinstallFromNpm(
             progress: { message in
@@ -248,9 +260,11 @@ struct AdvancedSettingsView: View {
                         self.alertMessage = message
                         self.appState.claudeCodePatchEnabled = true
                         self.claudeCodeStatus = .canPatch
+                        self.canOpenTerminal = false
                     case .failure(let error):
                         self.alertTitle = "Lỗi"
                         self.alertMessage = error.localizedDescription
+                        self.canOpenTerminal = error.canOpenTerminal
                         self.checkClaudeCodeStatus()
                     }
                     self.showingAlert = true

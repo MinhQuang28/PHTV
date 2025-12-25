@@ -339,6 +339,44 @@ return;
         return .success("Đã vá Claude Code thành công! Vui lòng khởi động lại Claude Code.")
     }
 
+    /// Find the brew executable path
+    private func findBrewPath() -> String? {
+        let brewPaths = [
+            "/opt/homebrew/bin/brew",   // Apple Silicon
+            "/usr/local/bin/brew",       // Intel Mac
+            "/home/linuxbrew/.linuxbrew/bin/brew"  // Linux
+        ]
+
+        for path in brewPaths {
+            if FileManager.default.fileExists(atPath: path) {
+                return path
+            }
+        }
+
+        // Fallback: use 'which brew'
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+        process.arguments = ["which", "brew"]
+
+        let pipe = Pipe()
+        process.standardOutput = pipe
+        process.standardError = FileHandle.nullDevice
+
+        do {
+            try process.run()
+            process.waitUntilExit()
+
+            let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            if let brewPath = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines),
+               !brewPath.isEmpty,
+               FileManager.default.fileExists(atPath: brewPath) {
+                return brewPath
+            }
+        } catch {}
+
+        return nil
+    }
+
     /// Reinstall Claude Code from npm (uninstall Homebrew version first)
     /// Returns progress updates via callback
     func reinstallFromNpm(progress: @escaping (String) -> Void, completion: @escaping (Result<String, PatchError>) -> Void) {
@@ -349,100 +387,194 @@ return;
             if installType == .homebrew {
                 progress("Đang gỡ Claude Code Homebrew...")
 
-                // Uninstall Homebrew version
-                let uninstallProcess = Process()
-                uninstallProcess.executableURL = URL(fileURLWithPath: "/opt/homebrew/bin/brew")
-                uninstallProcess.arguments = ["uninstall", "--cask", "claude-code"]
-                uninstallProcess.standardOutput = FileHandle.nullDevice
-                uninstallProcess.standardError = FileHandle.nullDevice
-
-                do {
-                    try uninstallProcess.run()
-                    uninstallProcess.waitUntilExit()
-                } catch {
-                    // Try without --cask
-                    let uninstallProcess2 = Process()
-                    uninstallProcess2.executableURL = URL(fileURLWithPath: "/opt/homebrew/bin/brew")
-                    uninstallProcess2.arguments = ["uninstall", "claude-code"]
-                    uninstallProcess2.standardOutput = FileHandle.nullDevice
-                    uninstallProcess2.standardError = FileHandle.nullDevice
-                    try? uninstallProcess2.run()
-                    uninstallProcess2.waitUntilExit()
-                }
-            }
-
-            // Step 2: Install via npm
-            progress("Đang cài đặt Claude Code qua npm...")
-
-            // Find npm path (including nvm)
-            let homeDir = NSHomeDirectory()
-            var npmPaths = [
-                "/opt/homebrew/bin/npm",
-                "/usr/local/bin/npm",
-                "/usr/bin/npm"
-            ]
-
-            // Add nvm paths
-            let nvmDir = homeDir + "/.nvm/versions/node"
-            if let nodeVersions = try? FileManager.default.contentsOfDirectory(atPath: nvmDir) {
-                for version in nodeVersions.sorted().reversed() {
-                    npmPaths.insert(nvmDir + "/" + version + "/bin/npm", at: 0)
-                }
-            }
-
-            var npmPath: String?
-            for path in npmPaths {
-                if FileManager.default.fileExists(atPath: path) {
-                    npmPath = path
-                    break
-                }
-            }
-
-            guard let npm = npmPath else {
-                completion(.failure(.npmNotFound))
-                return
-            }
-
-            let installProcess = Process()
-            installProcess.executableURL = URL(fileURLWithPath: npm)
-            installProcess.arguments = ["install", "-g", "@anthropic-ai/claude-code"]
-
-            let pipe = Pipe()
-            installProcess.standardOutput = pipe
-            installProcess.standardError = pipe
-
-            do {
-                try installProcess.run()
-                installProcess.waitUntilExit()
-
-                if installProcess.terminationStatus != 0 {
-                    let data = pipe.fileHandleForReading.readDataToEndOfFile()
-                    let output = String(data: data, encoding: .utf8) ?? ""
-                    if output.contains("permission denied") || output.contains("EACCES") {
-                        completion(.failure(.npmPermissionDenied))
-                    } else {
-                        completion(.failure(.npmInstallFailed))
-                    }
+                guard let brewPath = self.findBrewPath() else {
+                    // No brew found, but Homebrew was detected - try to continue anyway
+                    progress("Không tìm thấy brew, bỏ qua gỡ cài đặt...")
+                    // Continue to npm install
+                    self.installViaAndPatch(progress: progress, completion: completion)
                     return
                 }
-            } catch {
-                completion(.failure(.npmInstallFailed))
+
+                // Try multiple uninstall commands
+                let uninstallCommands: [[String]] = [
+                    ["uninstall", "--cask", "claude-code"],
+                    ["uninstall", "claude-code"],
+                    ["uninstall", "--cask", "--force", "claude-code"],
+                    ["uninstall", "--force", "claude-code"]
+                ]
+
+                var uninstalled = false
+                for args in uninstallCommands {
+                    let uninstallProcess = Process()
+                    uninstallProcess.executableURL = URL(fileURLWithPath: brewPath)
+                    uninstallProcess.arguments = args
+                    uninstallProcess.standardOutput = FileHandle.nullDevice
+                    uninstallProcess.standardError = FileHandle.nullDevice
+
+                    do {
+                        try uninstallProcess.run()
+                        uninstallProcess.waitUntilExit()
+                        if uninstallProcess.terminationStatus == 0 {
+                            uninstalled = true
+                            break
+                        }
+                    } catch {
+                        continue
+                    }
+                }
+
+                // Also try to remove the symlink manually if it still exists
+                let symlinkPaths = [
+                    "/opt/homebrew/bin/claude",
+                    "/usr/local/bin/claude"
+                ]
+
+                for path in symlinkPaths {
+                    if FileManager.default.fileExists(atPath: path) {
+                        // Check if it's a symlink to Homebrew/Caskroom
+                        if let resolved = try? FileManager.default.destinationOfSymbolicLink(atPath: path),
+                           resolved.contains("Caskroom") || resolved.contains("homebrew") {
+                            try? FileManager.default.removeItem(atPath: path)
+                        }
+                    }
+                }
+
+                if !uninstalled {
+                    progress("Không thể gỡ Homebrew, thử cài npm...")
+                }
+            }
+
+            // Step 2 & 3: Install via npm and apply patch
+            self.installViaAndPatch(progress: progress, completion: completion)
+        }
+    }
+
+    /// Install Claude Code via npm and apply patch
+    private func installViaAndPatch(progress: @escaping (String) -> Void, completion: @escaping (Result<String, PatchError>) -> Void) {
+        progress("Đang cài đặt Claude Code qua npm...")
+
+        // Find npm path (including nvm)
+        let homeDir = NSHomeDirectory()
+        var npmPaths = [
+            "/opt/homebrew/bin/npm",
+            "/usr/local/bin/npm",
+            "/usr/bin/npm"
+        ]
+
+        // Add nvm paths (prefer newer versions)
+        let nvmDir = homeDir + "/.nvm/versions/node"
+        if let nodeVersions = try? FileManager.default.contentsOfDirectory(atPath: nvmDir) {
+            for version in nodeVersions.sorted().reversed() {
+                npmPaths.insert(nvmDir + "/" + version + "/bin/npm", at: 0)
+            }
+        }
+
+        // Also check fnm paths
+        let fnmDir = homeDir + "/Library/Application Support/fnm/node-versions"
+        if let nodeVersions = try? FileManager.default.contentsOfDirectory(atPath: fnmDir) {
+            for version in nodeVersions.sorted().reversed() {
+                npmPaths.insert(fnmDir + "/" + version + "/installation/bin/npm", at: 0)
+            }
+        }
+
+        var npmPath: String?
+        for path in npmPaths {
+            if FileManager.default.fileExists(atPath: path) {
+                npmPath = path
+                break
+            }
+        }
+
+        guard let npm = npmPath else {
+            completion(.failure(.npmNotFound))
+            return
+        }
+
+        progress("Tìm thấy npm tại: \(npm)")
+
+        // Build full PATH including node bin directory
+        let nodeBinDir = (npm as NSString).deletingLastPathComponent
+        var fullPath = nodeBinDir
+
+        // Add common paths
+        let commonPaths = [
+            "/opt/homebrew/bin",
+            "/usr/local/bin",
+            "/usr/bin",
+            "/bin",
+            "/usr/sbin",
+            "/sbin"
+        ]
+        for path in commonPaths {
+            if !fullPath.contains(path) {
+                fullPath += ":" + path
+            }
+        }
+
+        // Use /bin/sh to run npm with proper environment
+        let installProcess = Process()
+        installProcess.executableURL = URL(fileURLWithPath: "/bin/sh")
+        installProcess.arguments = ["-c", "export PATH=\"\(fullPath):$PATH\" && \"\(npm)\" install -g @anthropic-ai/claude-code 2>&1"]
+
+        // Set up environment
+        var env = ProcessInfo.processInfo.environment
+        env["PATH"] = fullPath
+        env["HOME"] = homeDir
+        // Ensure npm uses the correct prefix for global installs (nvm)
+        if npm.contains(".nvm") {
+            env["npm_config_prefix"] = (nodeBinDir as NSString).deletingLastPathComponent
+        }
+        installProcess.environment = env
+
+        let pipe = Pipe()
+        installProcess.standardOutput = pipe
+        installProcess.standardError = pipe
+
+        do {
+            try installProcess.run()
+            installProcess.waitUntilExit()
+
+            let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            let output = String(data: data, encoding: .utf8) ?? ""
+
+            if installProcess.terminationStatus != 0 {
+                // Check for specific error types
+                if output.contains("permission denied") || output.contains("EACCES") {
+                    completion(.failure(.npmPermissionDenied))
+                } else if output.contains("npm ERR!") {
+                    // Extract the actual npm error for better debugging
+                    completion(.failure(.npmInstallFailedWithDetails(output)))
+                } else {
+                    completion(.failure(.npmInstallFailedWithDetails(output)))
+                }
                 return
             }
 
-            // Step 3: Apply patch
-            progress("Đang vá Claude Code...")
-
-            // Wait a moment for npm to finish writing files
+            // Verify installation succeeded by checking if claude is now available
+            progress("Đang kiểm tra cài đặt...")
             Thread.sleep(forTimeInterval: 0.5)
 
-            let patchResult = self.applyPatch()
-            switch patchResult {
-            case .success:
-                completion(.success("Đã cài đặt và vá Claude Code thành công!"))
-            case .failure(let error):
-                completion(.failure(error))
+            // Check if cli.js now exists
+            if self.getClaudeCliPath() == nil {
+                // npm reported success but claude is not found
+                completion(.failure(.npmInstallFailedWithDetails("npm báo thành công nhưng không tìm thấy Claude Code. Output: \(output)")))
+                return
             }
+
+        } catch {
+            completion(.failure(.npmInstallFailedWithDetails("Lỗi chạy npm: \(error.localizedDescription)")))
+            return
+        }
+
+        // Step 3: Apply patch
+        progress("Đang vá Claude Code...")
+
+        let patchResult = self.applyPatch()
+        switch patchResult {
+        case .success:
+            completion(.success("Đã cài đặt và vá Claude Code thành công!"))
+        case .failure(let error):
+            completion(.failure(error))
         }
     }
 
@@ -477,6 +609,44 @@ return;
             return .success("Đã khôi phục Claude Code về bản gốc")
         } catch {
             return .failure(.cannotRestoreBackup)
+        }
+    }
+
+    // MARK: - Manual Installation Helper
+
+    /// Get the command to manually install Claude Code via npm
+    func getManualInstallCommand() -> String {
+        return "npm install -g @anthropic-ai/claude-code"
+    }
+
+    /// Get the full command to uninstall homebrew and install npm version
+    func getFullManualCommand(isHomebrew: Bool) -> String {
+        if isHomebrew {
+            return """
+            brew uninstall --cask claude-code 2>/dev/null || brew uninstall claude-code 2>/dev/null
+            npm install -g @anthropic-ai/claude-code
+            """
+        } else {
+            return "npm install -g @anthropic-ai/claude-code"
+        }
+    }
+
+    /// Open Terminal with installation command
+    func openTerminalWithInstallCommand(isHomebrew: Bool) {
+        let command = isHomebrew
+            ? "brew uninstall --cask claude-code; npm install -g @anthropic-ai/claude-code"
+            : "npm install -g @anthropic-ai/claude-code"
+
+        let script = """
+        tell application "Terminal"
+            activate
+            do script "\(command)"
+        end tell
+        """
+
+        var error: NSDictionary?
+        if let scriptObject = NSAppleScript(source: script) {
+            scriptObject.executeAndReturnError(&error)
         }
     }
 
@@ -678,7 +848,9 @@ enum PatchError: Error, LocalizedError {
     case patternNotFound
     case npmNotFound
     case npmInstallFailed
+    case npmInstallFailedWithDetails(String)
     case npmPermissionDenied
+    case requiresManualInstall(isHomebrew: Bool)
 
     var errorDescription: String? {
         switch self {
@@ -700,8 +872,31 @@ enum PatchError: Error, LocalizedError {
             return "Không tìm thấy npm. Vui lòng cài đặt Node.js trước."
         case .npmInstallFailed:
             return "Không thể cài đặt Claude Code qua npm."
+        case .npmInstallFailedWithDetails(let details):
+            // Truncate details if too long
+            let maxLength = 500
+            let truncatedDetails = details.count > maxLength
+                ? String(details.prefix(maxLength)) + "..."
+                : details
+            return "Không thể cài đặt Claude Code qua npm.\n\nChi tiết: \(truncatedDetails)\n\nBạn có thể thử chạy thủ công trong Terminal:\nnpm install -g @anthropic-ai/claude-code"
         case .npmPermissionDenied:
-            return "Không có quyền cài đặt. Hãy thử chạy: sudo npm install -g @anthropic-ai/claude-code"
+            return "Không có quyền cài đặt. Hãy thử chạy trong Terminal:\nnpm install -g @anthropic-ai/claude-code\n\nHoặc với quyền admin:\nsudo npm install -g @anthropic-ai/claude-code"
+        case .requiresManualInstall(let isHomebrew):
+            if isHomebrew {
+                return "Cần cài đặt thủ công. Vui lòng chạy trong Terminal:\n\nbrew uninstall --cask claude-code\nnpm install -g @anthropic-ai/claude-code"
+            } else {
+                return "Cần cài đặt thủ công. Vui lòng chạy trong Terminal:\n\nnpm install -g @anthropic-ai/claude-code"
+            }
+        }
+    }
+
+    /// Check if this error can be resolved by manual installation
+    var canOpenTerminal: Bool {
+        switch self {
+        case .npmInstallFailed, .npmInstallFailedWithDetails, .npmPermissionDenied, .requiresManualInstall:
+            return true
+        default:
+            return false
         }
     }
 }
