@@ -232,6 +232,11 @@ struct SettingsItem: Identifiable {
             title: "Ứng dụng gửi từng phím", iconName: "app.badge.fill", tab: .advanced,
             keywords: ["send key apps", "ứng dụng", "từng phím", "app list"]),
 
+        // Advanced settings - Claude Code Fix
+        SettingsItem(
+            title: "Hỗ trợ gõ tiếng Việt trong Claude Code", iconName: "terminal.fill", tab: .advanced,
+            keywords: ["claude", "claude code", "terminal", "cli", "anthropic", "ai", "tiếng việt", "patch", "sửa lỗi", "fix"]),
+
         // Hotkey settings
         SettingsItem(
             title: "Phím tắt chuyển chế độ", iconName: "command.circle.fill", tab: .hotkeys,
