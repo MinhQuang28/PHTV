@@ -215,6 +215,9 @@ final class AppState: ObservableObject {
     @Published var performLayoutCompat: Bool = false
     @Published var showIconOnDock: Bool = false
 
+    // Claude Code patch setting
+    @Published var claudeCodePatchEnabled: Bool = false
+
     // Hotkey settings - Default: Ctrl + Shift (modifier only mode)
     // 0xFE = no key needed, just use modifiers
     @Published var switchKeyCommand: Bool = false
@@ -454,6 +457,9 @@ final class AppState: ObservableObject {
         fixChromiumBrowser = defaults.bool(forKey: "vFixChromiumBrowser")
         performLayoutCompat = defaults.bool(forKey: "vPerformLayoutCompat")
         showIconOnDock = defaults.bool(forKey: "vShowIconOnDock")
+
+        // Load Claude Code patch setting - check actual patch status
+        claudeCodePatchEnabled = ClaudeCodePatcher.shared.isPatched()
 
         // Load hotkey from SwitchKeyStatus (backend format)
         let switchKeyStatus = defaults.integer(forKey: "SwitchKeyStatus")
@@ -829,6 +835,23 @@ final class AppState: ObservableObject {
             // Notify backend so vShowIconOnDock stays in sync without restart
             NotificationCenter.default.post(
                 name: NSNotification.Name("PHTVSettingsChanged"), object: nil)
+        }.store(in: &cancellables)
+
+        // Observer for Claude Code patch - apply/remove patch when toggled
+        $claudeCodePatchEnabled.sink { [weak self] value in
+            guard let self = self, !self.isLoadingSettings else { return }
+            DispatchQueue.global(qos: .userInitiated).async {
+                let patcher = ClaudeCodePatcher.shared
+                let currentlyPatched = patcher.isPatched()
+
+                if value && !currentlyPatched {
+                    // User wants to enable, apply patch
+                    _ = patcher.applyPatch()
+                } else if !value && currentlyPatched {
+                    // User wants to disable, remove patch
+                    _ = patcher.removePatch()
+                }
+            }
         }.store(in: &cancellables)
 
         Publishers.Merge(

@@ -11,10 +11,30 @@ import SwiftUI
 struct AdvancedSettingsView: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var themeManager: ThemeManager
+    @State private var claudeCodeStatus: ClaudeCodeStatus = .checking
+    @State private var showingAlert = false
+    @State private var alertMessage = ""
+    @State private var alertTitle = ""
+    @State private var isConverting = false
+    @State private var convertProgress = ""
+
+    enum ClaudeCodeStatus {
+        case checking
+        case notInstalled     // Claude Code chưa cài
+        case homebrewInstall  // Cài qua Homebrew - cần chuyển sang npm
+        case canPatch         // Cài qua npm (JavaScript) - có thể patch
+    }
 
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
+                // Claude Code Fix
+                SettingsCard(title: "Sửa lỗi Claude Code trong Terminal", icon: "terminal.fill") {
+                    VStack(spacing: 0) {
+                        claudeCodeToggleRow
+                    }
+                }
+
                 // Advanced Typing Options
                 SettingsCard(title: "Tùy chọn nâng cao", icon: "gearshape.2.fill") {
                     VStack(spacing: 0) {
@@ -81,11 +101,224 @@ struct AdvancedSettingsView: View {
             .padding(20)
         }
         .background(Color(NSColor.windowBackgroundColor))
+        .onAppear {
+            checkClaudeCodeStatus()
+        }
+        .alert(alertTitle, isPresented: $showingAlert) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(alertMessage)
+        }
+    }
+
+    // MARK: - Claude Code Status
+
+    @ViewBuilder
+    private var claudeCodeToggleRow: some View {
+        let subtitle: String = {
+            switch claudeCodeStatus {
+            case .checking:
+                return "Đang kiểm tra..."
+            case .notInstalled:
+                return "Claude Code chưa được cài đặt"
+            case .homebrewInstall:
+                return isConverting ? convertProgress : "Bật để chuyển sang phiên bản hỗ trợ"
+            case .canPatch:
+                return appState.claudeCodePatchEnabled ? "Đã bật ✓" : "Sửa lỗi không nhận dấu tiếng Việt"
+            }
+        }()
+
+        let iconColor: Color = {
+            switch claudeCodeStatus {
+            case .checking, .canPatch:
+                return themeManager.themeColor
+            case .notInstalled:
+                return .secondary
+            case .homebrewInstall:
+                return isConverting ? themeManager.themeColor : .orange
+            }
+        }()
+
+        let isDisabled = claudeCodeStatus == .checking || claudeCodeStatus == .notInstalled || isConverting
+        let showProgress = claudeCodeStatus == .checking || isConverting
+
+        ClaudeCodeToggleRow(
+            iconColor: iconColor,
+            title: "Hỗ trợ gõ tiếng Việt trong Claude Code",
+            subtitle: subtitle,
+            showProgress: showProgress,
+            isDisabled: isDisabled,
+            isOn: Binding(
+                get: {
+                    claudeCodeStatus == .canPatch ? appState.claudeCodePatchEnabled : false
+                },
+                set: { newValue in
+                    if claudeCodeStatus == .homebrewInstall && newValue && !isConverting {
+                        convertToNpm()
+                    } else if claudeCodeStatus == .canPatch {
+                        if newValue {
+                            applyClaudeCodePatch()
+                        } else {
+                            removeClaudeCodePatch()
+                        }
+                    }
+                }
+            )
+        )
+    }
+
+    private func checkClaudeCodeStatus() {
+        claudeCodeStatus = .checking
+
+        DispatchQueue.global(qos: .userInitiated).async {
+            let patcher = ClaudeCodePatcher.shared
+            let installationType = patcher.getInstallationType()
+
+            let status: ClaudeCodeStatus
+            switch installationType {
+            case .notInstalled:
+                status = .notInstalled
+            case .homebrew:
+                status = .homebrewInstall
+            case .npm:
+                status = .canPatch
+            }
+
+            DispatchQueue.main.async {
+                self.claudeCodeStatus = status
+                // Sync toggle state with actual patch status
+                if status == .canPatch {
+                    self.appState.claudeCodePatchEnabled = patcher.isPatched()
+                }
+            }
+        }
+    }
+
+    private func applyClaudeCodePatch() {
+        let result = ClaudeCodePatcher.shared.applyPatch()
+        switch result {
+        case .success(let message):
+            appState.claudeCodePatchEnabled = true
+            alertTitle = "Thành công"
+            alertMessage = message
+        case .failure(let error):
+            appState.claudeCodePatchEnabled = false
+            alertTitle = "Lỗi"
+            alertMessage = error.localizedDescription
+        }
+        showingAlert = true
+    }
+
+    private func removeClaudeCodePatch() {
+        let result = ClaudeCodePatcher.shared.removePatch()
+        switch result {
+        case .success(let message):
+            appState.claudeCodePatchEnabled = false
+            alertTitle = "Thành công"
+            alertMessage = message
+        case .failure(let error):
+            // Nếu không có backup, chỉ cần tắt toggle
+            if case .noBackupFound = error {
+                appState.claudeCodePatchEnabled = false
+                return
+            }
+            alertTitle = "Lỗi"
+            alertMessage = error.localizedDescription
+        }
+        showingAlert = true
+    }
+
+    private func convertToNpm() {
+        isConverting = true
+        convertProgress = "Đang bắt đầu..."
+
+        ClaudeCodePatcher.shared.reinstallFromNpm(
+            progress: { message in
+                DispatchQueue.main.async {
+                    self.convertProgress = message
+                }
+            },
+            completion: { result in
+                DispatchQueue.main.async {
+                    self.isConverting = false
+
+                    switch result {
+                    case .success(let message):
+                        self.alertTitle = "Thành công"
+                        self.alertMessage = message
+                        self.appState.claudeCodePatchEnabled = true
+                        self.claudeCodeStatus = .canPatch
+                    case .failure(let error):
+                        self.alertTitle = "Lỗi"
+                        self.alertMessage = error.localizedDescription
+                        self.checkClaudeCodeStatus()
+                    }
+                    self.showingAlert = true
+                }
+            }
+        )
+    }
+}
+
+// MARK: - Claude Code Toggle Row (matches SettingsToggleRow style)
+
+private struct ClaudeCodeToggleRow: View {
+    let iconColor: Color
+    let title: String
+    let subtitle: String
+    let showProgress: Bool
+    let isDisabled: Bool
+    @Binding var isOn: Bool
+
+    var body: some View {
+        HStack(spacing: 14) {
+            ZStack {
+                if #available(macOS 26.0, *) {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(iconColor.opacity(0.12))
+                        .frame(width: 36, height: 36)
+                        .glassEffect(in: .rect(cornerRadius: 8))
+                } else {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(iconColor.opacity(0.12))
+                        .frame(width: 36, height: 36)
+                }
+
+                if showProgress {
+                    ProgressView()
+                        .scaleEffect(0.6)
+                } else {
+                    Image(systemName: "terminal.fill")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundStyle(iconColor)
+                }
+            }
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.body)
+                    .foregroundStyle(.primary)
+
+                Text(subtitle)
+                    .font(.caption)
+                    .foregroundStyle(iconColor == .orange ? iconColor : .secondary)
+            }
+
+            Spacer()
+
+            Toggle("", isOn: $isOn)
+                .labelsHidden()
+                .toggleStyle(.switch)
+                .tint(iconColor)
+                .disabled(isDisabled)
+        }
+        .padding(.vertical, 6)
     }
 }
 
 #Preview {
     AdvancedSettingsView()
         .environmentObject(AppState.shared)
+        .environmentObject(ThemeManager.shared)
         .frame(width: 500, height: 600)
 }
