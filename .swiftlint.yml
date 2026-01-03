@@ -1,0 +1,94 @@
+# SwiftLint Configuration for PHTV
+# https://github.com/realm/SwiftLint
+
+# Paths to include/exclude
+included:
+  - PHTV
+
+excluded:
+  - Pods
+  - build
+  - .build
+  - DerivedData
+  - vendor
+  - Carthage
+  - Tests/LinuxMain.swift
+  - "**/Resources"
+  - "**/*.generated.swift"
+
+# Disable some rules
+disabled_rules:
+  - trailing_whitespace # EditorConfig handles this
+  - line_length # Can be too strict for SwiftUI
+
+# Opt-in rules
+opt_in_rules:
+  - empty_count
+  - empty_string
+  - explicit_init
+  - first_where
+  - force_unwrapping
+  - implicit_return
+  - multiline_parameters
+  - redundant_nil_coalescing
+  - sorted_first_last
+  - unused_import
+  - vertical_parameter_alignment_on_call
+
+# Rule configurations
+identifier_name:
+  min_length: 2
+  max_length: 60
+  excluded:
+    - id
+    - i
+    - j
+    - k
+    - x
+    - y
+    - z
+
+type_name:
+  min_length: 3
+  max_length: 50
+  excluded:
+    - ID
+
+file_length:
+  warning: 500
+  error: 1000
+
+function_body_length:
+  warning: 50
+  error: 100
+
+type_body_length:
+  warning: 300
+  error: 500
+
+cyclomatic_complexity:
+  warning: 15
+  error: 25
+
+nesting:
+  type_level:
+    warning: 3
+  statement_level:
+    warning: 5
+
+# Custom rules
+custom_rules:
+  no_print:
+    name: "Use NSLog instead of print"
+    regex: '\bprint\('
+    message: "Use NSLog for production logging"
+    severity: warning
+
+  no_force_try:
+    name: "Avoid force try"
+    regex: 'try!'
+    message: "Use proper error handling instead of force try"
+    severity: warning
+
+# Reporter
+reporter: "xcode"

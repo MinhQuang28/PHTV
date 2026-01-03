@@ -6,6 +6,7 @@
 
 ### Bộ gõ tiếng Việt hiện đại cho macOS
 
+[![CI](https://github.com/PhamHungTien/PHTV/actions/workflows/ci.yml/badge.svg)](https://github.com/PhamHungTien/PHTV/actions/workflows/ci.yml)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![macOS 13+](https://img.shields.io/badge/macOS-13+-blue.svg)](https://www.apple.com/macos/)
 [![Universal Binary](https://img.shields.io/badge/Universal-Intel%20%2B%20Apple%20Silicon-red.svg)](https://support.apple.com/en-us/HT211814)
