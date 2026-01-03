@@ -113,7 +113,7 @@ git diff homebrew/phtv.rb
 
 # 3. Commit
 git add homebrew/phtv.rb
-git commit -m "chore: update homebrew formula to v1.2.8"
+git commit -m "chore: update homebrew formula to vX.X.X"
 git push
 
 # 4. Sync tap
@@ -124,10 +124,10 @@ git push
 Just create a GitHub Release - automation handles everything:
 
 ```bash
-gh release create v1.2.8 \
-  --title "PHTV v1.2.8" \
+gh release create vX.X.X \
+  --title "PHTV vX.X.X" \
   --notes-file CHANGELOG.md \
-  Releases/1.2.8/PHTV-1.2.8.dmg
+  Releases/X.X.X/PHTV-X.X.X.dmg
 ```
 
 ---

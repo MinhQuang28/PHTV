@@ -142,7 +142,7 @@ Hoặc trong Settings → Reset All (nếu có button này).
 
 ### Q24: Tại sao GIF không paste được vào Zalo/Messenger?
 
-**A:** PHTV v1.3.5+ đã hỗ trợ multi-format clipboard. Đảm bảo bạn đang dùng phiên bản mới nhất. Nếu vẫn gặp lỗi, đợi 0.2 giây sau khi click GIF để PHTV có thời gian copy vào clipboard.
+**A:** PHTV phiên bản mới nhất đã hỗ trợ multi-format clipboard. Đảm bảo bạn đang dùng phiên bản mới nhất. Nếu vẫn gặp lỗi, đợi 0.2 giây sau khi click GIF để PHTV có thời gian copy vào clipboard.
 
 ### Q25: Emoji picker có hỗ trợ tìm kiếm không?
 

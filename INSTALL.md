@@ -60,7 +60,7 @@ brew install --cask phamhungtien/tap/phtv
 ### Option 3: Từ GitHub Releases
 
 1. Vào [GitHub Releases](https://github.com/PhamHungTien/PHTV/releases/latest)
-2. Download file DMG mới nhất (VD: `PHTV-1.3.8.dmg`)
+2. Download file DMG mới nhất (VD: `PHTV-x.x.x.dmg`)
 3. Double-click để mở DMG
 4. Drag `PHTV.app` vào thư mục `Applications`
 
