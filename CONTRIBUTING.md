@@ -123,28 +123,6 @@ xcodebuild -project PHTV.xcodeproj -scheme PHTV test
 xcodebuild -project PHTV.xcodeproj clean
 ```
 
-### Code Quality
-
-**SwiftLint** được sử dụng để đảm bảo code quality:
-
-```bash
-# Install SwiftLint (nếu chưa có)
-brew install swiftlint
-
-# Run SwiftLint
-swiftlint lint
-
-# Auto-fix issues (cẩn thận!)
-swiftlint --fix
-```
-
-**CI sẽ tự động kiểm tra:**
-- ✅ SwiftLint (code style)
-- ✅ Build success (Universal Binary)
-- ✅ Code formatting (trailing whitespace, line endings)
-
-Đảm bảo code của bạn pass tất cả checks trước khi tạo PR!
-
 ### Debugging
 
 1. **Trong Xcode:**
