@@ -68,37 +68,17 @@ struct StatusBarMenuView: View {
         // ═══════════════════════════════════════════
         // MARK: - Chuyển đổi ngôn ngữ
         // ═══════════════════════════════════════════
-        Button {
-            appState.isEnabled = true
-        } label: {
-            Label {
-                HStack {
-                    Text("Tiếng Việt")
-                    if appState.isEnabled {
-                        Spacer()
-                        Image(systemName: "checkmark")
-                    }
-                }
-            } icon: {
-                Image(systemName: "v.circle.fill")
-            }
+        Picker("", selection: Binding(
+            get: { appState.isEnabled },
+            set: { appState.isEnabled = $0 }
+        )) {
+            Label("Tiếng Việt", systemImage: "v.circle.fill")
+                .tag(true)
+            Label("Tiếng Anh", systemImage: "e.circle.fill")
+                .tag(false)
         }
-
-        Button {
-            appState.isEnabled = false
-        } label: {
-            Label {
-                HStack {
-                    Text("Tiếng Anh")
-                    if !appState.isEnabled {
-                        Spacer()
-                        Image(systemName: "checkmark")
-                    }
-                }
-            } icon: {
-                Image(systemName: "e.circle.fill")
-            }
-        }
+        .pickerStyle(.inline)
+        .labelsHidden()
 
         Divider()
 
