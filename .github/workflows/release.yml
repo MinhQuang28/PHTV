@@ -66,12 +66,14 @@ jobs:
           echo "✅ Updated Info.plist: $VERSION ($BUILD)"
 
       - name: Import Code Signing Certificate
+        id: certificate
         env:
           CERTIFICATES_P12: ${{ secrets.CERTIFICATES_P12 }}
           CERTIFICATE_PASSWORD: ${{ secrets.CERTIFICATE_PASSWORD }}
         run: |
           if [ -z "$CERTIFICATES_P12" ]; then
             echo "⚠️ No certificate, will build without signing"
+            echo "has_certificate=false" >> $GITHUB_OUTPUT
             exit 0
           fi
           
@@ -89,26 +91,41 @@ jobs:
             -k "$KEYCHAIN_PATH" \
             -P "$CERTIFICATE_PASSWORD" \
             -T /usr/bin/codesign \
-            -T /usr/bin/security
+            -T /usr/bin/security \
+            -A
           
-          security list-keychain -d user -s "$KEYCHAIN_PATH"
+          # Add keychain to search list (BEFORE login.keychain)
+          security list-keychain -d user -s "$KEYCHAIN_PATH" $(security list-keychains -d user | tr -d '"')
+          security default-keychain -s "$KEYCHAIN_PATH"
           security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
           
+          # Find certificate identity
+          IDENTITY=$(security find-identity -v -p codesigning "$KEYCHAIN_PATH" | grep -o '"[^"]*"' | head -1 | tr -d '"')
+          echo "🔐 Found signing identity: $IDENTITY"
+          
           rm $RUNNER_TEMP/certificate.p12
+          
+          echo "has_certificate=true" >> $GITHUB_OUTPUT
+          echo "identity=$IDENTITY" >> $GITHUB_OUTPUT
+          echo "keychain=$KEYCHAIN_PATH" >> $GITHUB_OUTPUT
           echo "✅ Certificate imported"
 
       - name: Build
-        env:
-          CERTIFICATES_P12: ${{ secrets.CERTIFICATES_P12 }}
         run: |
-          if [ -n "$CERTIFICATES_P12" ]; then
-            # Build with signing
+          if [ "${{ steps.certificate.outputs.has_certificate }}" = "true" ]; then
+            echo "🔐 Building with code signing..."
+            echo "Identity: ${{ steps.certificate.outputs.identity }}"
+            
             xcodebuild -scheme PHTV \
               -configuration Release \
               -derivedDataPath ./build \
+              CODE_SIGN_STYLE=Manual \
+              CODE_SIGN_IDENTITY="${{ steps.certificate.outputs.identity }}" \
+              OTHER_CODE_SIGN_FLAGS="--keychain ${{ steps.certificate.outputs.keychain }}" \
               clean build \
               2>&1 | tee build.log
           else
+            echo "⚠️ Building without code signing..."
             # Build without signing (patch project first)
             sed -i '' 's/CODE_SIGN_STYLE = Automatic;/CODE_SIGN_STYLE = Manual;/g' PHTV.xcodeproj/project.pbxproj
             sed -i '' 's/"CODE_SIGN_IDENTITY\[sdk=macosx\*\]" = "Apple Development";/"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";/g' PHTV.xcodeproj/project.pbxproj
@@ -126,6 +143,13 @@ jobs:
             echo "❌ Build failed"
             exit 1
           fi
+          
+          # Verify signing
+          if [ "${{ steps.certificate.outputs.has_certificate }}" = "true" ]; then
+            echo "🔍 Verifying code signature..."
+            codesign -dv --verbose=2 "./build/Build/Products/Release/PHTV.app" 2>&1 || echo "⚠️ Signature verification output above"
+          fi
+          
           echo "✅ Build succeeded"
 
       - name: Create DMG
