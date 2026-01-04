@@ -116,9 +116,10 @@ class StatusBarController: ObservableObject {
         // Settings
         menu.addItem(NSMenuItem(title: "Cài đặt...", action: #selector(showSettingsMenu), keyEquivalent: ","))
         menu.addItem(NSMenuItem(title: "Về PHTV...", action: #selector(showAbout), keyEquivalent: ""))
-        
+        menu.addItem(NSMenuItem(title: "Kiểm tra cập nhật", action: #selector(checkForUpdates), keyEquivalent: ""))
+
         menu.addItem(NSMenuItem.separator())
-        
+
         // Quit
         menu.addItem(NSMenuItem(title: "Thoát PHTV", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
         
@@ -163,7 +164,14 @@ class StatusBarController: ObservableObject {
     @objc private func showAbout() {
         NotificationCenter.default.post(name: NSNotification.Name("ShowAbout"), object: nil)
     }
-    
+
+    @objc private func checkForUpdates() {
+        NotificationCenter.default.post(
+            name: NSNotification.Name("SparkleManualCheck"),
+            object: nil
+        )
+    }
+
     private func showSettings() {
         // Open settings window
         if #available(macOS 14.0, *) {

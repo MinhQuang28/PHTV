@@ -56,6 +56,14 @@ struct StatusBarMenuView: View {
         }
     }
 
+    // Check for updates
+    private func checkForUpdates() {
+        NotificationCenter.default.post(
+            name: NSNotification.Name("SparkleManualCheck"),
+            object: nil
+        )
+    }
+
     var body: some View {
         // ═══════════════════════════════════════════
         // MARK: - Chuyển đổi ngôn ngữ
@@ -63,24 +71,32 @@ struct StatusBarMenuView: View {
         Button {
             appState.isEnabled = true
         } label: {
-            HStack {
-                Text("Tiếng Việt")
-                if appState.isEnabled {
-                    Spacer()
-                    Image(systemName: "checkmark")
+            Label {
+                HStack {
+                    Text("Tiếng Việt")
+                    if appState.isEnabled {
+                        Spacer()
+                        Image(systemName: "checkmark")
+                    }
                 }
+            } icon: {
+                Image(systemName: "v.circle.fill")
             }
         }
 
         Button {
             appState.isEnabled = false
         } label: {
-            HStack {
-                Text("Tiếng Anh")
-                if !appState.isEnabled {
-                    Spacer()
-                    Image(systemName: "checkmark")
+            Label {
+                HStack {
+                    Text("Tiếng Anh")
+                    if !appState.isEnabled {
+                        Spacer()
+                        Image(systemName: "checkmark")
+                    }
                 }
+            } icon: {
+                Image(systemName: "e.circle.fill")
             }
         }
 
@@ -339,6 +355,12 @@ struct StatusBarMenuView: View {
             }
         } label: {
             Label("Về PHTV v\(appVersion)", systemImage: "info.circle")
+        }
+
+        Button {
+            checkForUpdates()
+        } label: {
+            Label("Kiểm tra cập nhật", systemImage: "arrow.down.circle")
         }
 
         Button {
