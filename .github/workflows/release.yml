@@ -83,48 +83,25 @@ jobs:
           # Clear DEVELOPMENT_TEAM
           sed -i '' 's/DEVELOPMENT_TEAM = F9XPW22T8M;/DEVELOPMENT_TEAM = "";/g' PHTV.xcodeproj/project.pbxproj
           
-          # Disable hardened runtime (causes signing issues)
+          # Disable hardened runtime (causes signing issues on CI without cert)
           sed -i '' 's/ENABLE_HARDENED_RUNTIME = YES;/ENABLE_HARDENED_RUNTIME = NO;/g' PHTV.xcodeproj/project.pbxproj
-          
-          # Fix asset catalog issues - disable INCLUDE_ALL_APPICON_ASSETS
-          sed -i '' 's/ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;/ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;/g' PHTV.xcodeproj/project.pbxproj
-          
-          # Remove PHTV.icon from build (Icon Composer format not supported on all CI)
-          # Find the line with PHTV.icon in Resources and comment-style remove it
-          sed -i '' '/46EF4FFA2EEDBFD400DF8DD1.*PHTV.icon in Resources/d' PHTV.xcodeproj/project.pbxproj
           
           echo "✓ Project patched for CI build"
           
           # Show diff
           diff PHTV.xcodeproj/project.pbxproj.bak PHTV.xcodeproj/project.pbxproj || true
 
-      - name: Resolve Swift Package Manager dependencies
-        run: |
-          echo "Resolving SPM dependencies..."
-          xcodebuild -resolvePackageDependencies \
-            -project PHTV.xcodeproj \
-            -scheme PHTV
-          echo "✓ SPM dependencies resolved"
-
       - name: Build PHTV
         run: |
-          set -eo pipefail
           VERSION="${{ steps.version.outputs.version }}"
           echo "Building PHTV version $VERSION..."
           
-          xcodebuild \
-            -project PHTV.xcodeproj \
-            -scheme PHTV \
+          xcodebuild -scheme PHTV \
             -configuration Release \
             -derivedDataPath ./build \
-            CODE_SIGN_IDENTITY="-" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO \
-            ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS=NO \
-            ASSETCATALOG_COMPILER_GENERATE_ASSET_SYMBOLS=NO \
             clean build \
             2>&1 | tee /tmp/xcodebuild.log
-
+          
           # Upload log on success too (helps debugging post-run)
           cp /tmp/xcodebuild.log ./xcodebuild.log
           
