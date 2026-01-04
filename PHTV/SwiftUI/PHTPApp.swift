@@ -3478,6 +3478,196 @@ struct EmojiItem: Identifiable, Codable, Equatable {
     }
 }
 
+// MARK: - Vietnamese Text Utilities
+
+/// Normalize Vietnamese text by removing diacritics for flexible search
+/// Example: "cười" -> "cuoi", "yêu" -> "yeu"
+func normalizeVietnamese(_ text: String) -> String {
+    let vietnameseMap: [Character: String] = [
+        // a variants
+        "à": "a", "á": "a", "ả": "a", "ã": "a", "ạ": "a",
+        "ă": "a", "ằ": "a", "ắ": "a", "ẳ": "a", "ẵ": "a", "ặ": "a",
+        "â": "a", "ầ": "a", "ấ": "a", "ẩ": "a", "ẫ": "a", "ậ": "a",
+        // e variants
+        "è": "e", "é": "e", "ẻ": "e", "ẽ": "e", "ẹ": "e",
+        "ê": "e", "ề": "e", "ế": "e", "ể": "e", "ễ": "e", "ệ": "e",
+        // i variants
+        "ì": "i", "í": "i", "ỉ": "i", "ĩ": "i", "ị": "i",
+        // o variants
+        "ò": "o", "ó": "o", "ỏ": "o", "õ": "o", "ọ": "o",
+        "ô": "o", "ồ": "o", "ố": "o", "ổ": "o", "ỗ": "o", "ộ": "o",
+        "ơ": "o", "ờ": "o", "ớ": "o", "ở": "o", "ỡ": "o", "ợ": "o",
+        // u variants
+        "ù": "u", "ú": "u", "ủ": "u", "ũ": "u", "ụ": "u",
+        "ư": "u", "ừ": "u", "ứ": "u", "ử": "u", "ữ": "u", "ự": "u",
+        // y variants
+        "ỳ": "y", "ý": "y", "ỷ": "y", "ỹ": "y", "ỵ": "y",
+        // d variant
+        "đ": "d",
+        // Uppercase versions
+        "À": "A", "Á": "A", "Ả": "A", "Ã": "A", "Ạ": "A",
+        "Ă": "A", "Ằ": "A", "Ắ": "A", "Ẳ": "A", "Ẵ": "A", "Ặ": "A",
+        "Â": "A", "Ầ": "A", "Ấ": "A", "Ẩ": "A", "Ẫ": "A", "Ậ": "A",
+        "È": "E", "É": "E", "Ẻ": "E", "Ẽ": "E", "Ẹ": "E",
+        "Ê": "E", "Ề": "E", "Ế": "E", "Ể": "E", "Ễ": "E", "Ệ": "E",
+        "Ì": "I", "Í": "I", "Ỉ": "I", "Ĩ": "I", "Ị": "I",
+        "Ò": "O", "Ó": "O", "Ỏ": "O", "Õ": "O", "Ọ": "O",
+        "Ô": "O", "Ồ": "O", "Ố": "O", "Ổ": "O", "Ỗ": "O", "Ộ": "O",
+        "Ơ": "O", "Ờ": "O", "Ớ": "O", "Ở": "O", "Ỡ": "O", "Ợ": "O",
+        "Ù": "U", "Ú": "U", "Ủ": "U", "Ũ": "U", "Ụ": "U",
+        "Ư": "U", "Ừ": "U", "Ứ": "U", "Ử": "U", "Ữ": "U", "Ự": "U",
+        "Ỳ": "Y", "Ý": "Y", "Ỷ": "Y", "Ỹ": "Y", "Ỵ": "Y",
+        "Đ": "D"
+    ]
+
+    var result = ""
+    for char in text {
+        if let replacement = vietnameseMap[char] {
+            result += replacement
+        } else {
+            result.append(char)
+        }
+    }
+    return result
+}
+
+/// Vietnamese synonyms and slang for emoji search
+/// Maps common Vietnamese words/slang to related search terms
+let vietnameseSynonyms: [String: [String]] = [
+    // Cười / Vui
+    "haha": ["cười", "vui", "laugh", "smile"],
+    "hihi": ["cười", "vui", "smile"],
+    "hehe": ["cười", "cười khẩy", "smile"],
+    "lol": ["cười", "laugh", "cười lăn"],
+    "vl": ["cười", "laugh", "shock"],
+    "vcl": ["cười", "shock", "ngạc nhiên"],
+    "=))": ["cười", "laugh"],
+    ":))": ["cười", "laugh"],
+    ":v": ["cười", "troll"],
+    "cute": ["dễ thương", "đáng yêu", "adorable"],
+
+    // Buồn / Khóc
+    "huhu": ["buồn", "khóc", "cry", "sad"],
+    "hic": ["buồn", "khóc", "cry"],
+    "sad": ["buồn", "khóc", "cry"],
+    ":(": ["buồn", "sad"],
+    "T_T": ["khóc", "cry", "buồn"],
+    "TT": ["khóc", "cry", "buồn"],
+
+    // Yêu / Tình cảm
+    "love": ["yêu", "tim", "heart"],
+    "iu": ["yêu", "love", "tim"],
+    "<3": ["yêu", "tim", "heart"],
+    "tym": ["tim", "heart", "yêu"],
+    "crush": ["yêu", "thích", "love"],
+    "thich": ["thích", "like", "yêu"],
+
+    // Giận / Tức
+    "gian": ["giận", "angry", "tức"],
+    "tuc": ["tức", "giận", "angry"],
+    "angry": ["giận", "tức"],
+    "grrr": ["giận", "angry"],
+
+    // Ngạc nhiên / Shock
+    "wow": ["ngạc nhiên", "ngôi sao", "star", "shock"],
+    "omg": ["ngạc nhiên", "shock", "oh"],
+    "wtf": ["ngạc nhiên", "shock"],
+    "oa": ["ngạc nhiên", "wow"],
+    "oaa": ["ngạc nhiên", "wow"],
+
+    // Tay / Cử chỉ
+    "ok": ["đồng ý", "ok", "tốt"],
+    "oke": ["đồng ý", "ok", "tốt"],
+    "okie": ["đồng ý", "ok", "tốt"],
+    "yes": ["đồng ý", "ok", "có"],
+    "no": ["không", "no", "từ chối"],
+    "ko": ["không", "no"],
+    "khong": ["không", "no"],
+    "bye": ["tạm biệt", "goodbye", "vẫy tay"],
+    "hi": ["xin chào", "hello", "vẫy tay"],
+    "hello": ["xin chào", "hello", "vẫy tay"],
+    "chao": ["xin chào", "hello", "vẫy tay"],
+
+    // Thức ăn
+    "an": ["ăn", "eat", "food"],
+    "do an": ["đồ ăn", "food", "eat"],
+    "com": ["cơm", "rice", "food"],
+    "pho": ["phở", "noodle"],
+    "tra": ["trà", "tea"],
+    "cafe": ["cà phê", "coffee"],
+    "caphe": ["cà phê", "coffee"],
+    "bia": ["bia", "beer"],
+    "ruou": ["rượu", "wine"],
+
+    // Động vật
+    "cho": ["chó", "dog"],
+    "meo": ["mèo", "cat"],
+    "ga": ["gà", "chicken"],
+    "ca": ["cá", "fish"],
+    "chim": ["chim", "bird"],
+    "bo": ["bò", "cow"],
+    "lon": ["lợn", "pig"],
+    "cun": ["cún", "chó", "dog"],
+
+    // Thời tiết / Tự nhiên
+    "mua": ["mưa", "rain"],
+    "nang": ["nắng", "sunny", "sun"],
+    "mat troi": ["mặt trời", "sun"],
+    "mat trang": ["mặt trăng", "moon"],
+    "sao": ["ngôi sao", "star"],
+    "hoa": ["hoa", "flower"],
+    "cay": ["cây", "tree"],
+
+    // Hoạt động
+    "ngu": ["ngủ", "sleep"],
+    "di ngu": ["ngủ", "sleep"],
+    "lam viec": ["làm việc", "work"],
+    "hoc": ["học", "study"],
+    "choi": ["chơi", "play"],
+    "doc": ["đọc", "read"],
+    "nghe nhac": ["âm nhạc", "music"],
+    "nhac": ["âm nhạc", "music"],
+
+    // Người / Gia đình
+    "me": ["mẹ", "mother"],
+    "ba": ["bố", "father"],
+    "ong": ["ông", "grandfather"],
+    "ba noi": ["bà nội", "grandmother"],
+    "con": ["con", "child"],
+    "em be": ["em bé", "baby"],
+    "be": ["em bé", "baby"],
+
+    // Công nghệ
+    "dien thoai": ["điện thoại", "phone"],
+    "dt": ["điện thoại", "phone"],
+    "may tinh": ["máy tính", "computer"],
+    "laptop": ["máy tính", "computer", "laptop"],
+    "code": ["lập trình", "developer", "code"],
+    "lap trinh": ["lập trình", "developer", "code"],
+
+    // Tiền / Mua sắm
+    "tien": ["tiền", "money"],
+    "mua sam": ["mua sắm", "shopping"],
+    "qua": ["quà", "gift"],
+
+    // Khác
+    "hot": ["nóng", "fire", "lửa"],
+    "lanh": ["lạnh", "cold"],
+    "dep": ["đẹp", "beautiful"],
+    "xau": ["xấu", "ugly"],
+    "to": ["to", "big"],
+    "nho": ["nhỏ", "small"],
+    "nhanh": ["nhanh", "fast"],
+    "cham": ["chậm", "slow"],
+    "dung": ["đúng", "correct", "tick"],
+    "sai": ["sai", "wrong", "x"],
+    "check": ["đúng", "tick", "kiểm tra"],
+    "cam on": ["cảm ơn", "thank"],
+    "thanks": ["cảm ơn", "thank"],
+    "sorry": ["xin lỗi", "sorry"],
+    "xin loi": ["xin lỗi", "sorry"]
+]
+
 /// Comprehensive emoji database with search support
 final class EmojiDatabase: @unchecked Sendable {
     static let shared = EmojiDatabase()
@@ -5001,6 +5191,279 @@ EmojiItem(emoji: "🏧", name: "Atm Sign", keywords: ["atm", "sign"], category: 
             EmojiItem(emoji: "▫️", name: "White Small Square", keywords: ["white", "small", "square"], category: "Symbols"),
         ]
 
+        // Flags - Country & Region Flags
+        let flags: [EmojiItem] = [
+            // Special Flags
+            EmojiItem(emoji: "🏳️", name: "White Flag", keywords: ["white", "flag", "cờ trắng", "đầu hàng"], category: "Flags"),
+            EmojiItem(emoji: "🏴", name: "Black Flag", keywords: ["black", "flag", "cờ đen"], category: "Flags"),
+            EmojiItem(emoji: "🏁", name: "Chequered Flag", keywords: ["checkered", "racing", "finish", "cờ đua", "kết thúc"], category: "Flags"),
+            EmojiItem(emoji: "🚩", name: "Triangular Flag", keywords: ["red", "flag", "cờ đỏ", "cờ tam giác"], category: "Flags"),
+            EmojiItem(emoji: "🏳️‍🌈", name: "Rainbow Flag", keywords: ["rainbow", "pride", "lgbt", "cờ cầu vồng"], category: "Flags"),
+            EmojiItem(emoji: "🏳️‍⚧️", name: "Transgender Flag", keywords: ["transgender", "pride", "cờ chuyển giới"], category: "Flags"),
+            EmojiItem(emoji: "🏴‍☠️", name: "Pirate Flag", keywords: ["pirate", "skull", "cờ cướp biển", "hải tặc"], category: "Flags"),
+            EmojiItem(emoji: "🎌", name: "Crossed Flags", keywords: ["japan", "crossed", "cờ chéo", "nhật bản"], category: "Flags"),
+
+            // Asia
+            EmojiItem(emoji: "🇻🇳", name: "Vietnam", keywords: ["vietnam", "việt nam", "vn", "cờ việt nam"], category: "Flags"),
+            EmojiItem(emoji: "🇯🇵", name: "Japan", keywords: ["japan", "nhật bản", "jp", "cờ nhật"], category: "Flags"),
+            EmojiItem(emoji: "🇰🇷", name: "South Korea", keywords: ["korea", "south korea", "hàn quốc", "kr", "cờ hàn"], category: "Flags"),
+            EmojiItem(emoji: "🇰🇵", name: "North Korea", keywords: ["korea", "north korea", "triều tiên", "bắc hàn"], category: "Flags"),
+            EmojiItem(emoji: "🇨🇳", name: "China", keywords: ["china", "trung quốc", "cn", "cờ trung"], category: "Flags"),
+            EmojiItem(emoji: "🇹🇼", name: "Taiwan", keywords: ["taiwan", "đài loan", "tw"], category: "Flags"),
+            EmojiItem(emoji: "🇭🇰", name: "Hong Kong", keywords: ["hong kong", "hồng kông", "hk"], category: "Flags"),
+            EmojiItem(emoji: "🇲🇴", name: "Macau", keywords: ["macau", "ma cao", "mo"], category: "Flags"),
+            EmojiItem(emoji: "🇹🇭", name: "Thailand", keywords: ["thailand", "thái lan", "th", "cờ thái"], category: "Flags"),
+            EmojiItem(emoji: "🇸🇬", name: "Singapore", keywords: ["singapore", "sg", "cờ sing"], category: "Flags"),
+            EmojiItem(emoji: "🇲🇾", name: "Malaysia", keywords: ["malaysia", "my", "mã lai"], category: "Flags"),
+            EmojiItem(emoji: "🇮🇩", name: "Indonesia", keywords: ["indonesia", "id", "indo"], category: "Flags"),
+            EmojiItem(emoji: "🇵🇭", name: "Philippines", keywords: ["philippines", "ph", "phi"], category: "Flags"),
+            EmojiItem(emoji: "🇱🇦", name: "Laos", keywords: ["laos", "lào", "la"], category: "Flags"),
+            EmojiItem(emoji: "🇰🇭", name: "Cambodia", keywords: ["cambodia", "campuchia", "kh"], category: "Flags"),
+            EmojiItem(emoji: "🇲🇲", name: "Myanmar", keywords: ["myanmar", "burma", "miến điện", "mm"], category: "Flags"),
+            EmojiItem(emoji: "🇧🇳", name: "Brunei", keywords: ["brunei", "bn"], category: "Flags"),
+            EmojiItem(emoji: "🇹🇱", name: "Timor-Leste", keywords: ["timor", "east timor", "đông timor", "tl"], category: "Flags"),
+            EmojiItem(emoji: "🇮🇳", name: "India", keywords: ["india", "ấn độ", "in"], category: "Flags"),
+            EmojiItem(emoji: "🇵🇰", name: "Pakistan", keywords: ["pakistan", "pk"], category: "Flags"),
+            EmojiItem(emoji: "🇧🇩", name: "Bangladesh", keywords: ["bangladesh", "bd"], category: "Flags"),
+            EmojiItem(emoji: "🇱🇰", name: "Sri Lanka", keywords: ["sri lanka", "lk"], category: "Flags"),
+            EmojiItem(emoji: "🇳🇵", name: "Nepal", keywords: ["nepal", "np"], category: "Flags"),
+            EmojiItem(emoji: "🇧🇹", name: "Bhutan", keywords: ["bhutan", "bt"], category: "Flags"),
+            EmojiItem(emoji: "🇲🇻", name: "Maldives", keywords: ["maldives", "mv"], category: "Flags"),
+            EmojiItem(emoji: "🇦🇫", name: "Afghanistan", keywords: ["afghanistan", "af"], category: "Flags"),
+            EmojiItem(emoji: "🇮🇷", name: "Iran", keywords: ["iran", "ir"], category: "Flags"),
+            EmojiItem(emoji: "🇮🇶", name: "Iraq", keywords: ["iraq", "iq"], category: "Flags"),
+            EmojiItem(emoji: "🇸🇦", name: "Saudi Arabia", keywords: ["saudi", "arabia", "ả rập", "sa"], category: "Flags"),
+            EmojiItem(emoji: "🇦🇪", name: "United Arab Emirates", keywords: ["uae", "emirates", "dubai", "ae"], category: "Flags"),
+            EmojiItem(emoji: "🇶🇦", name: "Qatar", keywords: ["qatar", "qa"], category: "Flags"),
+            EmojiItem(emoji: "🇰🇼", name: "Kuwait", keywords: ["kuwait", "kw"], category: "Flags"),
+            EmojiItem(emoji: "🇧🇭", name: "Bahrain", keywords: ["bahrain", "bh"], category: "Flags"),
+            EmojiItem(emoji: "🇴🇲", name: "Oman", keywords: ["oman", "om"], category: "Flags"),
+            EmojiItem(emoji: "🇾🇪", name: "Yemen", keywords: ["yemen", "ye"], category: "Flags"),
+            EmojiItem(emoji: "🇯🇴", name: "Jordan", keywords: ["jordan", "jo"], category: "Flags"),
+            EmojiItem(emoji: "🇱🇧", name: "Lebanon", keywords: ["lebanon", "lb", "li băng"], category: "Flags"),
+            EmojiItem(emoji: "🇸🇾", name: "Syria", keywords: ["syria", "sy"], category: "Flags"),
+            EmojiItem(emoji: "🇮🇱", name: "Israel", keywords: ["israel", "il"], category: "Flags"),
+            EmojiItem(emoji: "🇵🇸", name: "Palestine", keywords: ["palestine", "ps"], category: "Flags"),
+            EmojiItem(emoji: "🇹🇷", name: "Turkey", keywords: ["turkey", "thổ nhĩ kỳ", "tr"], category: "Flags"),
+            EmojiItem(emoji: "🇨🇾", name: "Cyprus", keywords: ["cyprus", "cy"], category: "Flags"),
+            EmojiItem(emoji: "🇬🇪", name: "Georgia", keywords: ["georgia", "ge"], category: "Flags"),
+            EmojiItem(emoji: "🇦🇲", name: "Armenia", keywords: ["armenia", "am"], category: "Flags"),
+            EmojiItem(emoji: "🇦🇿", name: "Azerbaijan", keywords: ["azerbaijan", "az"], category: "Flags"),
+            EmojiItem(emoji: "🇰🇿", name: "Kazakhstan", keywords: ["kazakhstan", "kz"], category: "Flags"),
+            EmojiItem(emoji: "🇺🇿", name: "Uzbekistan", keywords: ["uzbekistan", "uz"], category: "Flags"),
+            EmojiItem(emoji: "🇹🇲", name: "Turkmenistan", keywords: ["turkmenistan", "tm"], category: "Flags"),
+            EmojiItem(emoji: "🇹🇯", name: "Tajikistan", keywords: ["tajikistan", "tj"], category: "Flags"),
+            EmojiItem(emoji: "🇰🇬", name: "Kyrgyzstan", keywords: ["kyrgyzstan", "kg"], category: "Flags"),
+            EmojiItem(emoji: "🇲🇳", name: "Mongolia", keywords: ["mongolia", "mông cổ", "mn"], category: "Flags"),
+
+            // Europe
+            EmojiItem(emoji: "🇬🇧", name: "United Kingdom", keywords: ["uk", "britain", "england", "anh", "gb"], category: "Flags"),
+            EmojiItem(emoji: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", name: "England", keywords: ["england", "anh"], category: "Flags"),
+            EmojiItem(emoji: "🏴󠁧󠁢󠁳󠁣󠁴󠁿", name: "Scotland", keywords: ["scotland", "scotland"], category: "Flags"),
+            EmojiItem(emoji: "🏴󠁧󠁢󠁷󠁬󠁳󠁿", name: "Wales", keywords: ["wales", "xứ wales"], category: "Flags"),
+            EmojiItem(emoji: "🇫🇷", name: "France", keywords: ["france", "pháp", "fr"], category: "Flags"),
+            EmojiItem(emoji: "🇩🇪", name: "Germany", keywords: ["germany", "đức", "de"], category: "Flags"),
+            EmojiItem(emoji: "🇮🇹", name: "Italy", keywords: ["italy", "ý", "it"], category: "Flags"),
+            EmojiItem(emoji: "🇪🇸", name: "Spain", keywords: ["spain", "tây ban nha", "es"], category: "Flags"),
+            EmojiItem(emoji: "🇵🇹", name: "Portugal", keywords: ["portugal", "bồ đào nha", "pt"], category: "Flags"),
+            EmojiItem(emoji: "🇳🇱", name: "Netherlands", keywords: ["netherlands", "holland", "hà lan", "nl"], category: "Flags"),
+            EmojiItem(emoji: "🇧🇪", name: "Belgium", keywords: ["belgium", "bỉ", "be"], category: "Flags"),
+            EmojiItem(emoji: "🇨🇭", name: "Switzerland", keywords: ["switzerland", "thụy sĩ", "ch"], category: "Flags"),
+            EmojiItem(emoji: "🇦🇹", name: "Austria", keywords: ["austria", "áo", "at"], category: "Flags"),
+            EmojiItem(emoji: "🇵🇱", name: "Poland", keywords: ["poland", "ba lan", "pl"], category: "Flags"),
+            EmojiItem(emoji: "🇨🇿", name: "Czech Republic", keywords: ["czech", "séc", "cz"], category: "Flags"),
+            EmojiItem(emoji: "🇸🇰", name: "Slovakia", keywords: ["slovakia", "sk"], category: "Flags"),
+            EmojiItem(emoji: "🇭🇺", name: "Hungary", keywords: ["hungary", "hung", "hu"], category: "Flags"),
+            EmojiItem(emoji: "🇷🇴", name: "Romania", keywords: ["romania", "ro"], category: "Flags"),
+            EmojiItem(emoji: "🇧🇬", name: "Bulgaria", keywords: ["bulgaria", "bg"], category: "Flags"),
+            EmojiItem(emoji: "🇬🇷", name: "Greece", keywords: ["greece", "hy lạp", "gr"], category: "Flags"),
+            EmojiItem(emoji: "🇺🇦", name: "Ukraine", keywords: ["ukraine", "ukraina", "ua"], category: "Flags"),
+            EmojiItem(emoji: "🇷🇺", name: "Russia", keywords: ["russia", "nga", "ru"], category: "Flags"),
+            EmojiItem(emoji: "🇧🇾", name: "Belarus", keywords: ["belarus", "by"], category: "Flags"),
+            EmojiItem(emoji: "🇲🇩", name: "Moldova", keywords: ["moldova", "md"], category: "Flags"),
+            EmojiItem(emoji: "🇷🇸", name: "Serbia", keywords: ["serbia", "rs"], category: "Flags"),
+            EmojiItem(emoji: "🇭🇷", name: "Croatia", keywords: ["croatia", "hr"], category: "Flags"),
+            EmojiItem(emoji: "🇸🇮", name: "Slovenia", keywords: ["slovenia", "si"], category: "Flags"),
+            EmojiItem(emoji: "🇧🇦", name: "Bosnia", keywords: ["bosnia", "herzegovina", "ba"], category: "Flags"),
+            EmojiItem(emoji: "🇲🇪", name: "Montenegro", keywords: ["montenegro", "me"], category: "Flags"),
+            EmojiItem(emoji: "🇲🇰", name: "North Macedonia", keywords: ["macedonia", "mk"], category: "Flags"),
+            EmojiItem(emoji: "🇦🇱", name: "Albania", keywords: ["albania", "al"], category: "Flags"),
+            EmojiItem(emoji: "🇽🇰", name: "Kosovo", keywords: ["kosovo", "xk"], category: "Flags"),
+            EmojiItem(emoji: "🇸🇪", name: "Sweden", keywords: ["sweden", "thụy điển", "se"], category: "Flags"),
+            EmojiItem(emoji: "🇳🇴", name: "Norway", keywords: ["norway", "na uy", "no"], category: "Flags"),
+            EmojiItem(emoji: "🇫🇮", name: "Finland", keywords: ["finland", "phần lan", "fi"], category: "Flags"),
+            EmojiItem(emoji: "🇩🇰", name: "Denmark", keywords: ["denmark", "đan mạch", "dk"], category: "Flags"),
+            EmojiItem(emoji: "🇮🇸", name: "Iceland", keywords: ["iceland", "băng đảo", "is"], category: "Flags"),
+            EmojiItem(emoji: "🇮🇪", name: "Ireland", keywords: ["ireland", "ai len", "ie"], category: "Flags"),
+            EmojiItem(emoji: "🇱🇺", name: "Luxembourg", keywords: ["luxembourg", "lu"], category: "Flags"),
+            EmojiItem(emoji: "🇱🇮", name: "Liechtenstein", keywords: ["liechtenstein", "li"], category: "Flags"),
+            EmojiItem(emoji: "🇲🇨", name: "Monaco", keywords: ["monaco", "mc"], category: "Flags"),
+            EmojiItem(emoji: "🇦🇩", name: "Andorra", keywords: ["andorra", "ad"], category: "Flags"),
+            EmojiItem(emoji: "🇸🇲", name: "San Marino", keywords: ["san marino", "sm"], category: "Flags"),
+            EmojiItem(emoji: "🇻🇦", name: "Vatican City", keywords: ["vatican", "va"], category: "Flags"),
+            EmojiItem(emoji: "🇲🇹", name: "Malta", keywords: ["malta", "mt"], category: "Flags"),
+            EmojiItem(emoji: "🇪🇪", name: "Estonia", keywords: ["estonia", "ee"], category: "Flags"),
+            EmojiItem(emoji: "🇱🇻", name: "Latvia", keywords: ["latvia", "lv"], category: "Flags"),
+            EmojiItem(emoji: "🇱🇹", name: "Lithuania", keywords: ["lithuania", "lt"], category: "Flags"),
+            EmojiItem(emoji: "🇪🇺", name: "European Union", keywords: ["eu", "europe", "châu âu", "liên minh"], category: "Flags"),
+
+            // Americas
+            EmojiItem(emoji: "🇺🇸", name: "United States", keywords: ["usa", "us", "america", "mỹ", "hoa kỳ"], category: "Flags"),
+            EmojiItem(emoji: "🇨🇦", name: "Canada", keywords: ["canada", "ca"], category: "Flags"),
+            EmojiItem(emoji: "🇲🇽", name: "Mexico", keywords: ["mexico", "mx"], category: "Flags"),
+            EmojiItem(emoji: "🇧🇷", name: "Brazil", keywords: ["brazil", "brasil", "br"], category: "Flags"),
+            EmojiItem(emoji: "🇦🇷", name: "Argentina", keywords: ["argentina", "ar"], category: "Flags"),
+            EmojiItem(emoji: "🇨🇱", name: "Chile", keywords: ["chile", "cl"], category: "Flags"),
+            EmojiItem(emoji: "🇨🇴", name: "Colombia", keywords: ["colombia", "co"], category: "Flags"),
+            EmojiItem(emoji: "🇵🇪", name: "Peru", keywords: ["peru", "pe"], category: "Flags"),
+            EmojiItem(emoji: "🇻🇪", name: "Venezuela", keywords: ["venezuela", "ve"], category: "Flags"),
+            EmojiItem(emoji: "🇪🇨", name: "Ecuador", keywords: ["ecuador", "ec"], category: "Flags"),
+            EmojiItem(emoji: "🇧🇴", name: "Bolivia", keywords: ["bolivia", "bo"], category: "Flags"),
+            EmojiItem(emoji: "🇵🇾", name: "Paraguay", keywords: ["paraguay", "py"], category: "Flags"),
+            EmojiItem(emoji: "🇺🇾", name: "Uruguay", keywords: ["uruguay", "uy"], category: "Flags"),
+            EmojiItem(emoji: "🇬🇾", name: "Guyana", keywords: ["guyana", "gy"], category: "Flags"),
+            EmojiItem(emoji: "🇸🇷", name: "Suriname", keywords: ["suriname", "sr"], category: "Flags"),
+            EmojiItem(emoji: "🇬🇫", name: "French Guiana", keywords: ["french guiana", "gf"], category: "Flags"),
+            EmojiItem(emoji: "🇵🇦", name: "Panama", keywords: ["panama", "pa"], category: "Flags"),
+            EmojiItem(emoji: "🇨🇷", name: "Costa Rica", keywords: ["costa rica", "cr"], category: "Flags"),
+            EmojiItem(emoji: "🇳🇮", name: "Nicaragua", keywords: ["nicaragua", "ni"], category: "Flags"),
+            EmojiItem(emoji: "🇭🇳", name: "Honduras", keywords: ["honduras", "hn"], category: "Flags"),
+            EmojiItem(emoji: "🇸🇻", name: "El Salvador", keywords: ["el salvador", "sv"], category: "Flags"),
+            EmojiItem(emoji: "🇬🇹", name: "Guatemala", keywords: ["guatemala", "gt"], category: "Flags"),
+            EmojiItem(emoji: "🇧🇿", name: "Belize", keywords: ["belize", "bz"], category: "Flags"),
+            EmojiItem(emoji: "🇨🇺", name: "Cuba", keywords: ["cuba", "cu"], category: "Flags"),
+            EmojiItem(emoji: "🇯🇲", name: "Jamaica", keywords: ["jamaica", "jm"], category: "Flags"),
+            EmojiItem(emoji: "🇭🇹", name: "Haiti", keywords: ["haiti", "ht"], category: "Flags"),
+            EmojiItem(emoji: "🇩🇴", name: "Dominican Republic", keywords: ["dominican", "do"], category: "Flags"),
+            EmojiItem(emoji: "🇵🇷", name: "Puerto Rico", keywords: ["puerto rico", "pr"], category: "Flags"),
+            EmojiItem(emoji: "🇧🇸", name: "Bahamas", keywords: ["bahamas", "bs"], category: "Flags"),
+            EmojiItem(emoji: "🇧🇧", name: "Barbados", keywords: ["barbados", "bb"], category: "Flags"),
+            EmojiItem(emoji: "🇹🇹", name: "Trinidad and Tobago", keywords: ["trinidad", "tobago", "tt"], category: "Flags"),
+            EmojiItem(emoji: "🇬🇩", name: "Grenada", keywords: ["grenada", "gd"], category: "Flags"),
+            EmojiItem(emoji: "🇱🇨", name: "Saint Lucia", keywords: ["saint lucia", "lc"], category: "Flags"),
+            EmojiItem(emoji: "🇻🇨", name: "Saint Vincent", keywords: ["saint vincent", "vc"], category: "Flags"),
+            EmojiItem(emoji: "🇦🇬", name: "Antigua and Barbuda", keywords: ["antigua", "barbuda", "ag"], category: "Flags"),
+            EmojiItem(emoji: "🇩🇲", name: "Dominica", keywords: ["dominica", "dm"], category: "Flags"),
+            EmojiItem(emoji: "🇰🇳", name: "Saint Kitts and Nevis", keywords: ["saint kitts", "nevis", "kn"], category: "Flags"),
+            EmojiItem(emoji: "🇦🇼", name: "Aruba", keywords: ["aruba", "aw"], category: "Flags"),
+            EmojiItem(emoji: "🇨🇼", name: "Curaçao", keywords: ["curacao", "cw"], category: "Flags"),
+            EmojiItem(emoji: "🇻🇮", name: "US Virgin Islands", keywords: ["virgin islands", "vi"], category: "Flags"),
+            EmojiItem(emoji: "🇧🇲", name: "Bermuda", keywords: ["bermuda", "bm"], category: "Flags"),
+            EmojiItem(emoji: "🇰🇾", name: "Cayman Islands", keywords: ["cayman", "ky"], category: "Flags"),
+            EmojiItem(emoji: "🇹🇨", name: "Turks and Caicos", keywords: ["turks", "caicos", "tc"], category: "Flags"),
+            EmojiItem(emoji: "🇲🇸", name: "Montserrat", keywords: ["montserrat", "ms"], category: "Flags"),
+            EmojiItem(emoji: "🇦🇮", name: "Anguilla", keywords: ["anguilla", "ai"], category: "Flags"),
+            EmojiItem(emoji: "🇧🇱", name: "Saint Barthélemy", keywords: ["saint barthelemy", "bl"], category: "Flags"),
+            EmojiItem(emoji: "🇲🇫", name: "Saint Martin", keywords: ["saint martin", "mf"], category: "Flags"),
+            EmojiItem(emoji: "🇸🇽", name: "Sint Maarten", keywords: ["sint maarten", "sx"], category: "Flags"),
+            EmojiItem(emoji: "🇬🇱", name: "Greenland", keywords: ["greenland", "gl"], category: "Flags"),
+            EmojiItem(emoji: "🇵🇲", name: "Saint Pierre and Miquelon", keywords: ["saint pierre", "miquelon", "pm"], category: "Flags"),
+            EmojiItem(emoji: "🇫🇰", name: "Falkland Islands", keywords: ["falkland", "fk"], category: "Flags"),
+
+            // Africa
+            EmojiItem(emoji: "🇪🇬", name: "Egypt", keywords: ["egypt", "ai cập", "eg"], category: "Flags"),
+            EmojiItem(emoji: "🇿🇦", name: "South Africa", keywords: ["south africa", "nam phi", "za"], category: "Flags"),
+            EmojiItem(emoji: "🇳🇬", name: "Nigeria", keywords: ["nigeria", "ng"], category: "Flags"),
+            EmojiItem(emoji: "🇰🇪", name: "Kenya", keywords: ["kenya", "ke"], category: "Flags"),
+            EmojiItem(emoji: "🇪🇹", name: "Ethiopia", keywords: ["ethiopia", "et"], category: "Flags"),
+            EmojiItem(emoji: "🇬🇭", name: "Ghana", keywords: ["ghana", "gh"], category: "Flags"),
+            EmojiItem(emoji: "🇹🇿", name: "Tanzania", keywords: ["tanzania", "tz"], category: "Flags"),
+            EmojiItem(emoji: "🇺🇬", name: "Uganda", keywords: ["uganda", "ug"], category: "Flags"),
+            EmojiItem(emoji: "🇷🇼", name: "Rwanda", keywords: ["rwanda", "rw"], category: "Flags"),
+            EmojiItem(emoji: "🇧🇮", name: "Burundi", keywords: ["burundi", "bi"], category: "Flags"),
+            EmojiItem(emoji: "🇨🇩", name: "DR Congo", keywords: ["congo", "drc", "cd"], category: "Flags"),
+            EmojiItem(emoji: "🇨🇬", name: "Congo", keywords: ["congo", "cg"], category: "Flags"),
+            EmojiItem(emoji: "🇨🇲", name: "Cameroon", keywords: ["cameroon", "cm"], category: "Flags"),
+            EmojiItem(emoji: "🇨🇮", name: "Côte d'Ivoire", keywords: ["ivory coast", "cote divoire", "ci"], category: "Flags"),
+            EmojiItem(emoji: "🇸🇳", name: "Senegal", keywords: ["senegal", "sn"], category: "Flags"),
+            EmojiItem(emoji: "🇲🇱", name: "Mali", keywords: ["mali", "ml"], category: "Flags"),
+            EmojiItem(emoji: "🇧🇫", name: "Burkina Faso", keywords: ["burkina faso", "bf"], category: "Flags"),
+            EmojiItem(emoji: "🇳🇪", name: "Niger", keywords: ["niger", "ne"], category: "Flags"),
+            EmojiItem(emoji: "🇹🇩", name: "Chad", keywords: ["chad", "td"], category: "Flags"),
+            EmojiItem(emoji: "🇸🇩", name: "Sudan", keywords: ["sudan", "sd"], category: "Flags"),
+            EmojiItem(emoji: "🇸🇸", name: "South Sudan", keywords: ["south sudan", "ss"], category: "Flags"),
+            EmojiItem(emoji: "🇪🇷", name: "Eritrea", keywords: ["eritrea", "er"], category: "Flags"),
+            EmojiItem(emoji: "🇩🇯", name: "Djibouti", keywords: ["djibouti", "dj"], category: "Flags"),
+            EmojiItem(emoji: "🇸🇴", name: "Somalia", keywords: ["somalia", "so"], category: "Flags"),
+            EmojiItem(emoji: "🇲🇦", name: "Morocco", keywords: ["morocco", "ma rốc", "ma"], category: "Flags"),
+            EmojiItem(emoji: "🇩🇿", name: "Algeria", keywords: ["algeria", "dz"], category: "Flags"),
+            EmojiItem(emoji: "🇹🇳", name: "Tunisia", keywords: ["tunisia", "tn"], category: "Flags"),
+            EmojiItem(emoji: "🇱🇾", name: "Libya", keywords: ["libya", "ly"], category: "Flags"),
+            EmojiItem(emoji: "🇲🇷", name: "Mauritania", keywords: ["mauritania", "mr"], category: "Flags"),
+            EmojiItem(emoji: "🇬🇲", name: "Gambia", keywords: ["gambia", "gm"], category: "Flags"),
+            EmojiItem(emoji: "🇬🇼", name: "Guinea-Bissau", keywords: ["guinea bissau", "gw"], category: "Flags"),
+            EmojiItem(emoji: "🇬🇳", name: "Guinea", keywords: ["guinea", "gn"], category: "Flags"),
+            EmojiItem(emoji: "🇸🇱", name: "Sierra Leone", keywords: ["sierra leone", "sl"], category: "Flags"),
+            EmojiItem(emoji: "🇱🇷", name: "Liberia", keywords: ["liberia", "lr"], category: "Flags"),
+            EmojiItem(emoji: "🇹🇬", name: "Togo", keywords: ["togo", "tg"], category: "Flags"),
+            EmojiItem(emoji: "🇧🇯", name: "Benin", keywords: ["benin", "bj"], category: "Flags"),
+            EmojiItem(emoji: "🇬🇦", name: "Gabon", keywords: ["gabon", "ga"], category: "Flags"),
+            EmojiItem(emoji: "🇬🇶", name: "Equatorial Guinea", keywords: ["equatorial guinea", "gq"], category: "Flags"),
+            EmojiItem(emoji: "🇸🇹", name: "São Tomé and Príncipe", keywords: ["sao tome", "principe", "st"], category: "Flags"),
+            EmojiItem(emoji: "🇨🇻", name: "Cape Verde", keywords: ["cape verde", "cv"], category: "Flags"),
+            EmojiItem(emoji: "🇦🇴", name: "Angola", keywords: ["angola", "ao"], category: "Flags"),
+            EmojiItem(emoji: "🇿🇲", name: "Zambia", keywords: ["zambia", "zm"], category: "Flags"),
+            EmojiItem(emoji: "🇿🇼", name: "Zimbabwe", keywords: ["zimbabwe", "zw"], category: "Flags"),
+            EmojiItem(emoji: "🇧🇼", name: "Botswana", keywords: ["botswana", "bw"], category: "Flags"),
+            EmojiItem(emoji: "🇳🇦", name: "Namibia", keywords: ["namibia", "na"], category: "Flags"),
+            EmojiItem(emoji: "🇲🇿", name: "Mozambique", keywords: ["mozambique", "mz"], category: "Flags"),
+            EmojiItem(emoji: "🇲🇼", name: "Malawi", keywords: ["malawi", "mw"], category: "Flags"),
+            EmojiItem(emoji: "🇱🇸", name: "Lesotho", keywords: ["lesotho", "ls"], category: "Flags"),
+            EmojiItem(emoji: "🇸🇿", name: "Eswatini", keywords: ["eswatini", "swaziland", "sz"], category: "Flags"),
+            EmojiItem(emoji: "🇲🇬", name: "Madagascar", keywords: ["madagascar", "mg"], category: "Flags"),
+            EmojiItem(emoji: "🇲🇺", name: "Mauritius", keywords: ["mauritius", "mu"], category: "Flags"),
+            EmojiItem(emoji: "🇸🇨", name: "Seychelles", keywords: ["seychelles", "sc"], category: "Flags"),
+            EmojiItem(emoji: "🇰🇲", name: "Comoros", keywords: ["comoros", "km"], category: "Flags"),
+            EmojiItem(emoji: "🇷🇪", name: "Réunion", keywords: ["reunion", "re"], category: "Flags"),
+            EmojiItem(emoji: "🇾🇹", name: "Mayotte", keywords: ["mayotte", "yt"], category: "Flags"),
+            EmojiItem(emoji: "🇨🇫", name: "Central African Republic", keywords: ["central african", "cf"], category: "Flags"),
+
+            // Oceania
+            EmojiItem(emoji: "🇦🇺", name: "Australia", keywords: ["australia", "úc", "au"], category: "Flags"),
+            EmojiItem(emoji: "🇳🇿", name: "New Zealand", keywords: ["new zealand", "nz"], category: "Flags"),
+            EmojiItem(emoji: "🇵🇬", name: "Papua New Guinea", keywords: ["papua", "new guinea", "pg"], category: "Flags"),
+            EmojiItem(emoji: "🇫🇯", name: "Fiji", keywords: ["fiji", "fj"], category: "Flags"),
+            EmojiItem(emoji: "🇸🇧", name: "Solomon Islands", keywords: ["solomon", "sb"], category: "Flags"),
+            EmojiItem(emoji: "🇻🇺", name: "Vanuatu", keywords: ["vanuatu", "vu"], category: "Flags"),
+            EmojiItem(emoji: "🇳🇨", name: "New Caledonia", keywords: ["new caledonia", "nc"], category: "Flags"),
+            EmojiItem(emoji: "🇵🇫", name: "French Polynesia", keywords: ["french polynesia", "pf"], category: "Flags"),
+            EmojiItem(emoji: "🇼🇸", name: "Samoa", keywords: ["samoa", "ws"], category: "Flags"),
+            EmojiItem(emoji: "🇦🇸", name: "American Samoa", keywords: ["american samoa", "as"], category: "Flags"),
+            EmojiItem(emoji: "🇹🇴", name: "Tonga", keywords: ["tonga", "to"], category: "Flags"),
+            EmojiItem(emoji: "🇰🇮", name: "Kiribati", keywords: ["kiribati", "ki"], category: "Flags"),
+            EmojiItem(emoji: "🇹🇻", name: "Tuvalu", keywords: ["tuvalu", "tv"], category: "Flags"),
+            EmojiItem(emoji: "🇳🇷", name: "Nauru", keywords: ["nauru", "nr"], category: "Flags"),
+            EmojiItem(emoji: "🇫🇲", name: "Micronesia", keywords: ["micronesia", "fm"], category: "Flags"),
+            EmojiItem(emoji: "🇲🇭", name: "Marshall Islands", keywords: ["marshall", "mh"], category: "Flags"),
+            EmojiItem(emoji: "🇵🇼", name: "Palau", keywords: ["palau", "pw"], category: "Flags"),
+            EmojiItem(emoji: "🇬🇺", name: "Guam", keywords: ["guam", "gu"], category: "Flags"),
+            EmojiItem(emoji: "🇲🇵", name: "Northern Mariana Islands", keywords: ["northern mariana", "mp"], category: "Flags"),
+            EmojiItem(emoji: "🇼🇫", name: "Wallis and Futuna", keywords: ["wallis", "futuna", "wf"], category: "Flags"),
+            EmojiItem(emoji: "🇨🇰", name: "Cook Islands", keywords: ["cook islands", "ck"], category: "Flags"),
+            EmojiItem(emoji: "🇳🇺", name: "Niue", keywords: ["niue", "nu"], category: "Flags"),
+            EmojiItem(emoji: "🇹🇰", name: "Tokelau", keywords: ["tokelau", "tk"], category: "Flags"),
+            EmojiItem(emoji: "🇵🇳", name: "Pitcairn Islands", keywords: ["pitcairn", "pn"], category: "Flags"),
+            EmojiItem(emoji: "🇳🇫", name: "Norfolk Island", keywords: ["norfolk", "nf"], category: "Flags"),
+            EmojiItem(emoji: "🇨🇽", name: "Christmas Island", keywords: ["christmas island", "cx"], category: "Flags"),
+            EmojiItem(emoji: "🇨🇨", name: "Cocos Islands", keywords: ["cocos", "keeling", "cc"], category: "Flags"),
+            EmojiItem(emoji: "🇭🇲", name: "Heard & McDonald Islands", keywords: ["heard", "mcdonald", "hm"], category: "Flags"),
+
+            // Other Territories
+            EmojiItem(emoji: "🇬🇮", name: "Gibraltar", keywords: ["gibraltar", "gi"], category: "Flags"),
+            EmojiItem(emoji: "🇯🇪", name: "Jersey", keywords: ["jersey", "je"], category: "Flags"),
+            EmojiItem(emoji: "🇬🇬", name: "Guernsey", keywords: ["guernsey", "gg"], category: "Flags"),
+            EmojiItem(emoji: "🇮🇲", name: "Isle of Man", keywords: ["isle of man", "im"], category: "Flags"),
+            EmojiItem(emoji: "🇫🇴", name: "Faroe Islands", keywords: ["faroe", "fo"], category: "Flags"),
+            EmojiItem(emoji: "🇸🇯", name: "Svalbard & Jan Mayen", keywords: ["svalbard", "jan mayen", "sj"], category: "Flags"),
+            EmojiItem(emoji: "🇦🇽", name: "Åland Islands", keywords: ["aland", "ax"], category: "Flags"),
+            EmojiItem(emoji: "🇧🇻", name: "Bouvet Island", keywords: ["bouvet", "bv"], category: "Flags"),
+            EmojiItem(emoji: "🇮🇴", name: "British Indian Ocean Territory", keywords: ["british indian ocean", "io"], category: "Flags"),
+            EmojiItem(emoji: "🇹🇫", name: "French Southern Territories", keywords: ["french southern", "tf"], category: "Flags"),
+            EmojiItem(emoji: "🇬🇸", name: "South Georgia", keywords: ["south georgia", "gs"], category: "Flags"),
+            EmojiItem(emoji: "🇦🇶", name: "Antarctica", keywords: ["antarctica", "nam cực", "aq"], category: "Flags"),
+            EmojiItem(emoji: "🇺🇳", name: "United Nations", keywords: ["united nations", "un", "liên hợp quốc"], category: "Flags"),
+        ]
+
         self.categories = [
             ("Smileys", "😀", smileys),
             ("People", "👋", hands),
@@ -5011,35 +5474,136 @@ EmojiItem(emoji: "🏧", name: "Atm Sign", keywords: ["atm", "sign"], category: 
             ("Travel", "🚗", travel),
             ("Objects", "💻", objects),
             ("Symbols", "⭐", symbols),
+            ("Flags", "🏳️", flags),
         ]
     }
 
-    /// Search emojis by keyword
+    /// Smart search emojis with Vietnamese support
+    /// Features: diacritics removal, synonym expansion, relevance scoring
     func search(_ query: String) -> [EmojiItem] {
         guard !query.isEmpty else { return [] }
 
         let lowercaseQuery = query.lowercased()
-        var results: [EmojiItem] = []
+        let normalizedQuery = normalizeVietnamese(lowercaseQuery)
+
+        // Expand query with synonyms
+        var searchTerms = [lowercaseQuery, normalizedQuery]
+        if let synonyms = vietnameseSynonyms[lowercaseQuery] {
+            searchTerms.append(contentsOf: synonyms)
+        }
+        if let synonyms = vietnameseSynonyms[normalizedQuery] {
+            searchTerms.append(contentsOf: synonyms)
+        }
+        // Remove duplicates
+        searchTerms = Array(Set(searchTerms))
+
+        // Get frequency map for boosting frequently used emojis
+        let frequencyMap = getEmojiFrequency()
+
+        // Score-based results: (emoji, score)
+        var scoredResults: [(EmojiItem, Int)] = []
+        var addedEmojis = Set<String>() // Track added emojis to avoid duplicates
 
         for (_, _, emojis) in categories {
             for emoji in emojis {
-                // Search in name
-                if emoji.name.lowercased().contains(lowercaseQuery) {
-                    results.append(emoji)
-                    continue
-                }
+                // Skip if already added
+                guard !addedEmojis.contains(emoji.emoji) else { continue }
 
-                // Search in keywords
-                for keyword in emoji.keywords {
-                    if keyword.lowercased().contains(lowercaseQuery) {
-                        results.append(emoji)
-                        break
-                    }
+                let score = calculateMatchScore(
+                    emoji: emoji,
+                    searchTerms: searchTerms,
+                    originalQuery: lowercaseQuery,
+                    normalizedQuery: normalizedQuery
+                )
+
+                if score > 0 {
+                    // Boost score based on usage frequency
+                    let frequencyBoost = min(frequencyMap[emoji.emoji] ?? 0, 10) * 5
+                    let finalScore = score + frequencyBoost
+
+                    scoredResults.append((emoji, finalScore))
+                    addedEmojis.insert(emoji.emoji)
                 }
             }
         }
 
-        return results
+        // Sort by score (highest first)
+        scoredResults.sort { $0.1 > $1.1 }
+
+        return scoredResults.map { $0.0 }
+    }
+
+    /// Calculate match score for an emoji against search terms
+    /// Higher score = better match
+    /// Scoring: exact match (100) > prefix match (80) > word boundary (60) > contains (40)
+    private func calculateMatchScore(
+        emoji: EmojiItem,
+        searchTerms: [String],
+        originalQuery: String,
+        normalizedQuery: String
+    ) -> Int {
+        var maxScore = 0
+
+        // Prepare searchable text from emoji
+        let nameLower = emoji.name.lowercased()
+        let nameNormalized = normalizeVietnamese(nameLower)
+        let keywordsLower = emoji.keywords.map { $0.lowercased() }
+        let keywordsNormalized = emoji.keywords.map { normalizeVietnamese($0.lowercased()) }
+
+        for term in searchTerms {
+            let termNormalized = normalizeVietnamese(term)
+
+            // Check name (English)
+            let nameScore = matchScore(query: term, queryNormalized: termNormalized,
+                                       target: nameLower, targetNormalized: nameNormalized)
+            maxScore = max(maxScore, nameScore)
+
+            // Check keywords (English + Vietnamese)
+            for (i, keyword) in keywordsLower.enumerated() {
+                let keywordNormalized = keywordsNormalized[i]
+                let keywordScore = matchScore(query: term, queryNormalized: termNormalized,
+                                             target: keyword, targetNormalized: keywordNormalized)
+                // Keywords get slightly lower priority than name
+                maxScore = max(maxScore, keywordScore > 0 ? keywordScore - 5 : 0)
+            }
+        }
+
+        return maxScore
+    }
+
+    /// Calculate match score between query and target string
+    private func matchScore(query: String, queryNormalized: String,
+                           target: String, targetNormalized: String) -> Int {
+        // Exact match (highest priority)
+        if target == query || targetNormalized == queryNormalized {
+            return 100
+        }
+
+        // Prefix match
+        if target.hasPrefix(query) || targetNormalized.hasPrefix(queryNormalized) {
+            return 80
+        }
+
+        // Word boundary match (e.g., "happy" in "cười happy")
+        let targetWords = target.split(separator: " ").map(String.init)
+        let targetNormalizedWords = targetNormalized.split(separator: " ").map(String.init)
+        for word in targetWords {
+            if word == query || word.hasPrefix(query) {
+                return 60
+            }
+        }
+        for word in targetNormalizedWords {
+            if word == queryNormalized || word.hasPrefix(queryNormalized) {
+                return 60
+            }
+        }
+
+        // Contains match (lowest priority)
+        if target.contains(query) || targetNormalized.contains(queryNormalized) {
+            return 40
+        }
+
+        return 0
     }
 
     // MARK: - Recent & Frequently Used Tracking
