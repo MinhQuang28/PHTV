@@ -7,22 +7,29 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to release (e.g., 1.3.9)'
+        description: 'Version to release (e.g., 1.4.0)'
         required: true
         type: string
 
 permissions:
   contents: write
 
+env:
+  SPARKLE_VERSION: "2.8.1"
+
 jobs:
-  build-and-release:
-    name: Build and Release PHTV
-    runs-on: macos-latest
+  build:
+    name: Build PHTV
+    runs-on: macos-15
     outputs:
       version: ${{ steps.version.outputs.version }}
+      build_number: ${{ steps.version.outputs.build_number }}
+      dmg_name: ${{ steps.dmg.outputs.name }}
+      dmg_size: ${{ steps.dmg.outputs.size }}
+      signature: ${{ steps.sign.outputs.signature }}
 
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -32,304 +39,159 @@ jobs:
         with:
           xcode-version: latest-stable
 
-      - name: Get version
+      - name: Determine version
         id: version
         run: |
           if [ -n "${{ github.event.inputs.version }}" ]; then
             VERSION="${{ github.event.inputs.version }}"
-          elif [ -n "${{ github.ref_name }}" ]; then
-            VERSION="${{ github.ref_name }}"
-            VERSION="${VERSION#v}"
           else
-            VERSION=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" PHTV/Info.plist)
+            VERSION="${GITHUB_REF_NAME#v}"
           fi
           
+          # Get current build number and increment
+          CURRENT_BUILD=$(/usr/libexec/PlistBuddy -c "Print CFBundleVersion" PHTV/Info.plist)
+          BUILD_NUMBER=$((CURRENT_BUILD + 1))
+          
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Building version: $VERSION"
+          echo "build_number=$BUILD_NUMBER" >> $GITHUB_OUTPUT
+          echo "📦 Version: $VERSION (Build $BUILD_NUMBER)"
 
-      - name: Update version in Info.plist
+      - name: Update Info.plist
         run: |
           VERSION="${{ steps.version.outputs.version }}"
+          BUILD="${{ steps.version.outputs.build_number }}"
           
-          # Backup original
-          cp PHTV/Info.plist PHTV/Info.plist.bak
-          
-          # Update CFBundleShortVersionString
           /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" PHTV/Info.plist
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD" PHTV/Info.plist
           
-          # Auto increment CFBundleVersion (build number)
-          CURRENT_BUILD=$(/usr/libexec/PlistBuddy -c "Print CFBundleVersion" PHTV/Info.plist)
-          NEW_BUILD=$((CURRENT_BUILD + 1))
-          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $NEW_BUILD" PHTV/Info.plist
-          
-          echo "✓ Updated Info.plist:"
-          echo "  CFBundleShortVersionString: $VERSION"
-          echo "  CFBundleVersion: $NEW_BUILD (was $CURRENT_BUILD)"
+          echo "✅ Updated Info.plist: $VERSION ($BUILD)"
 
-      - name: Disable code signing in project (CI patch)
+      - name: Patch project for CI
         run: |
-          echo "Patching project.pbxproj for CI build..."
-          
-          # Backup original
-          cp PHTV.xcodeproj/project.pbxproj PHTV.xcodeproj/project.pbxproj.bak
-          
-          # Replace Automatic with Manual signing
+          # Disable code signing for CI build
           sed -i '' 's/CODE_SIGN_STYLE = Automatic;/CODE_SIGN_STYLE = Manual;/g' PHTV.xcodeproj/project.pbxproj
-          
-          # Replace Apple Development with ad-hoc signing (-)
           sed -i '' 's/"CODE_SIGN_IDENTITY\[sdk=macosx\*\]" = "Apple Development";/"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";/g' PHTV.xcodeproj/project.pbxproj
           sed -i '' 's/"CODE_SIGN_IDENTITY\[sdk=macosx\*\]" = "Mac Development";/"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";/g' PHTV.xcodeproj/project.pbxproj
-          
-          # Clear DEVELOPMENT_TEAM
           sed -i '' 's/DEVELOPMENT_TEAM = F9XPW22T8M;/DEVELOPMENT_TEAM = "";/g' PHTV.xcodeproj/project.pbxproj
-          
-          # Disable hardened runtime (causes signing issues on CI without cert)
           sed -i '' 's/ENABLE_HARDENED_RUNTIME = YES;/ENABLE_HARDENED_RUNTIME = NO;/g' PHTV.xcodeproj/project.pbxproj
           
-          echo "✓ Project patched for CI build"
-          
-          # Show diff
-          diff PHTV.xcodeproj/project.pbxproj.bak PHTV.xcodeproj/project.pbxproj || true
+          echo "✅ Project patched for CI"
 
-      - name: Build PHTV
+      - name: Build
         run: |
-          VERSION="${{ steps.version.outputs.version }}"
-          echo "Building PHTV version $VERSION..."
-          
           xcodebuild -scheme PHTV \
             -configuration Release \
             -derivedDataPath ./build \
             clean build \
-            2>&1 | tee /tmp/xcodebuild.log
-          
-          # Upload log on success too (helps debugging post-run)
-          cp /tmp/xcodebuild.log ./xcodebuild.log
+            2>&1 | tee build.log
           
           if [ ! -d "./build/Build/Products/Release/PHTV.app" ]; then
-            echo "❌ Build failed - PHTV.app not found"
+            echo "❌ Build failed"
             exit 1
           fi
           
-          echo "✓ Build completed successfully"
+          echo "✅ Build succeeded"
 
-      - name: Create DMG with Applications shortcut
-        if: ${{ success() }}
-        id: create_dmg
+      - name: Create DMG
+        id: dmg
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           APP_PATH="./build/Build/Products/Release/PHTV.app"
           DMG_NAME="PHTV-$VERSION.dmg"
-          DMG_PATH="./$DMG_NAME"
-          VOLUME_NAME="PHTV"
           
-          # Create temporary directory for DMG contents
+          # Create temp folder with app and Applications symlink
           TEMP_DIR=$(mktemp -d)
-          echo "Creating DMG contents in $TEMP_DIR"
-          
-          # Copy app
           cp -R "$APP_PATH" "$TEMP_DIR/"
-          
-          # Create Applications symlink
           ln -s /Applications "$TEMP_DIR/Applications"
           
-          echo "✓ DMG contents ready (app + Applications symlink)"
-          
           # Create DMG
-          hdiutil create -volname "$VOLUME_NAME" \
-                         -srcfolder "$TEMP_DIR" \
-                         -ov \
-                         -format UDZO \
-                         -imagekey zlib-level=9 \
-                         "$DMG_PATH"
+          hdiutil create -volname "PHTV" \
+            -srcfolder "$TEMP_DIR" \
+            -ov -format UDZO \
+            -imagekey zlib-level=9 \
+            "$DMG_NAME"
           
-          # Clean up
           rm -rf "$TEMP_DIR"
           
-          # Get file info
-          FILE_SIZE=$(stat -f%z "$DMG_PATH")
-          SIZE_MB=$(echo "scale=2; $FILE_SIZE/1024/1024" | bc)
-          
-          echo "✓ DMG created: $DMG_PATH"
-          echo "  Size: $FILE_SIZE bytes ($SIZE_MB MB)"
-          echo "dmg_path=$DMG_PATH" >> $GITHUB_OUTPUT
-          echo "dmg_name=$DMG_NAME" >> $GITHUB_OUTPUT
+          SIZE=$(stat -f%z "$DMG_NAME")
+          echo "name=$DMG_NAME" >> $GITHUB_OUTPUT
+          echo "size=$SIZE" >> $GITHUB_OUTPUT
+          echo "✅ DMG created: $DMG_NAME ($SIZE bytes)"
 
-      - name: Download Sparkle tools
-        if: ${{ success() }}
-        id: sparkle
+      - name: Download Sparkle
         run: |
-          SPARKLE_DIR="/tmp/Sparkle-for-Swift-Package-Manager"
-          
-          if [ -d "$SPARKLE_DIR" ]; then
-            echo "✓ Sparkle already downloaded"
-          else
-            echo "Downloading Sparkle..."
-            cd /tmp
-            curl -LO https://github.com/sparkle-project/Sparkle/releases/latest/download/Sparkle-for-Swift-Package-Manager.zip
-            unzip -q Sparkle-for-Swift-Package-Manager.zip
-            echo "✓ Sparkle downloaded"
-          fi
-          
-          echo "sparkle_bin=$SPARKLE_DIR/bin" >> $GITHUB_OUTPUT
+          curl -sL "https://github.com/sparkle-project/Sparkle/releases/download/${{ env.SPARKLE_VERSION }}/Sparkle-for-Swift-Package-Manager.zip" -o sparkle.zip
+          unzip -q sparkle.zip -d /tmp/Sparkle
+          echo "✅ Sparkle ${{ env.SPARKLE_VERSION }} downloaded"
 
-      - name: Sign update with Sparkle
-        if: ${{ success() && env.SPARKLE_PRIVATE_KEY != '' }}
-        id: sign_update
+      - name: Sign update
+        id: sign
         env:
           SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
         run: |
-          DMG_PATH="${{ steps.create_dmg.outputs.dmg_path }}"
-          SPARKLE_BIN="${{ steps.sparkle.outputs.sparkle_bin }}"
+          DMG_NAME="${{ steps.dmg.outputs.name }}"
           
-          # Create temp key file
-          echo "$SPARKLE_PRIVATE_KEY" > /tmp/sparkle_key
+          if [ -z "$SPARKLE_PRIVATE_KEY" ]; then
+            echo "⚠️ No SPARKLE_PRIVATE_KEY, skipping signing"
+            echo "signature=" >> $GITHUB_OUTPUT
+            exit 0
+          fi
           
-          # Sign the update
-          SIGNATURE=$("$SPARKLE_BIN/sign_update" "$DMG_PATH" -f /tmp/sparkle_key | grep 'sparkle:edSignature=' | cut -d'"' -f2)
-          rm /tmp/sparkle_key
+          echo "$SPARKLE_PRIVATE_KEY" > /tmp/sparkle.key
           
-          echo "✓ Update signed with Sparkle"
+          RESULT=$(/tmp/Sparkle/bin/sign_update "$DMG_NAME" -f /tmp/sparkle.key)
+          SIGNATURE=$(echo "$RESULT" | grep -o 'sparkle:edSignature="[^"]*"' | cut -d'"' -f2)
+          
+          rm /tmp/sparkle.key
+          
+          if [ -z "$SIGNATURE" ]; then
+            echo "❌ Failed to sign"
+            exit 1
+          fi
+          
           echo "signature=$SIGNATURE" >> $GITHUB_OUTPUT
+          echo "✅ Signed: ${SIGNATURE:0:20}..."
 
-      - name: Create release with GitHub
-        if: ${{ success() }}
-        uses: softprops/action-gh-release@v1
+      - name: Upload DMG artifact
+        uses: actions/upload-artifact@v4
         with:
-          tag_name: v${{ steps.version.outputs.version }}
-          name: PHTV ${{ steps.version.outputs.version }}
-          files: ${{ steps.create_dmg.outputs.dmg_path }}
-          draft: false
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Update appcast feed
-        if: ${{ success() }}
-        run: |
-          VERSION="${{ steps.version.outputs.version }}"
-          DMG_NAME="${{ steps.create_dmg.outputs.dmg_name }}"
-          SIGNATURE="${{ steps.sign_update.outputs.signature }}"
-          DMG_PATH="${{ steps.create_dmg.outputs.dmg_path }}"
-          BUILD_NUMBER=$(/usr/libexec/PlistBuddy -c "Print CFBundleVersion" PHTV/Info.plist)
-          
-          FILE_SIZE=$(stat -f%z "$DMG_PATH")
-          DOWNLOAD_URL="https://github.com/${{ github.repository }}/releases/download/v$VERSION/$DMG_NAME"
-          DATE=$(date -R)
-          
-          # Create appcast entry file with proper XML format
-          cat > /tmp/appcast_entry.xml << 'ENTRY_EOF'
-        <item>
-            <title>PHTV VERSION_PLACEHOLDER</title>
-            <link>LINK_PLACEHOLDER</link>
-            <sparkle:version>BUILD_PLACEHOLDER</sparkle:version>
-            <sparkle:shortVersionString>VERSION_PLACEHOLDER</sparkle:shortVersionString>
-            <description><![CDATA[
-                <h2>PHTV VERSION_PLACEHOLDER</h2>
-                <p>See release notes at: <a href="LINK_PLACEHOLDER">GitHub Release</a></p>
-            ]]></description>
-            <pubDate>DATE_PLACEHOLDER</pubDate>
-            <enclosure
-                url="URL_PLACEHOLDER"
-                sparkle:version="BUILD_PLACEHOLDER"
-                sparkle:shortVersionString="VERSION_PLACEHOLDER"
-                length="SIZE_PLACEHOLDER"
-                type="application/octet-stream"
-                SIGNATURE_PLACEHOLDER/>
-            <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
-        </item>
-ENTRY_EOF
-          
-          # Replace placeholders
-          sed -i '' "s|VERSION_PLACEHOLDER|$VERSION|g" /tmp/appcast_entry.xml
-          sed -i '' "s|BUILD_PLACEHOLDER|$BUILD_NUMBER|g" /tmp/appcast_entry.xml
-          sed -i '' "s|LINK_PLACEHOLDER|https://github.com/${{ github.repository }}/releases/tag/v$VERSION|g" /tmp/appcast_entry.xml
-          sed -i '' "s|URL_PLACEHOLDER|$DOWNLOAD_URL|g" /tmp/appcast_entry.xml
-          sed -i '' "s|DATE_PLACEHOLDER|$DATE|g" /tmp/appcast_entry.xml
-          sed -i '' "s|SIZE_PLACEHOLDER|$FILE_SIZE|g" /tmp/appcast_entry.xml
-          
-          if [ -n "$SIGNATURE" ]; then
-            sed -i '' "s|SIGNATURE_PLACEHOLDER|sparkle:edSignature=\"$SIGNATURE\"|g" /tmp/appcast_entry.xml
-          else
-            sed -i '' "s|SIGNATURE_PLACEHOLDER||g" /tmp/appcast_entry.xml
-          fi
-          
-          echo "✓ Appcast entry created:"
-          cat /tmp/appcast_entry.xml
-
-      - name: Checkout main and update appcast
-        if: ${{ success() }}
-        uses: actions/checkout@v4
-        with:
-          ref: main
-          path: repo-main
-
-      - name: Merge appcast entry into feed
-        if: ${{ success() }}
-        run: |
-          FEED_PATH="repo-main/docs/appcast.xml"
-          ENTRY_PATH="/tmp/appcast_entry.xml"
-          
-          if [ ! -f "$FEED_PATH" ]; then
-            echo "Error: appcast.xml not found"
-            exit 1
-          fi
-          if [ ! -f "$ENTRY_PATH" ]; then
-            echo "Error: appcast entry not found"
-            exit 1
-          fi
-          
-          # Use Python for proper XML insertion after "<!-- Most recent version first -->"
-          python3 << 'PYTHON_EOF'
-import re
-
-with open('repo-main/docs/appcast.xml', 'r') as f:
-    content = f.read()
-
-with open('/tmp/appcast_entry.xml', 'r') as f:
-    entry = f.read()
-
-# Find the marker comment and insert after it
-marker = '<!-- Most recent version first -->'
-if marker in content:
-    content = content.replace(marker, marker + '\n' + entry)
-else:
-    # Fallback: insert after <language> tag
-    content = re.sub(r'(<language>.*?</language>)', r'\1\n' + entry, content)
-
-with open('repo-main/docs/appcast.xml', 'w') as f:
-    f.write(content)
-
-print('✓ Appcast merged successfully')
-PYTHON_EOF
-
-      - name: Commit and push appcast
-        if: ${{ success() }}
-        run: |
-          cd repo-main
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add docs/appcast.xml
-          
-          if git diff --cached --quiet; then
-            echo "No changes to appcast"
-          else
-            git commit -m "chore: update appcast for v${{ steps.version.outputs.version }}"
-            git push
-            echo "✓ Appcast updated and pushed"
-          fi
+          name: dmg
+          path: ${{ steps.dmg.outputs.name }}
+          retention-days: 1
 
       - name: Upload build log
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: xcodebuild-log
-          path: xcodebuild.log
+          name: build-log
+          path: build.log
+          retention-days: 7
 
-  update-homebrew:
-    name: Update Homebrew Formula
-    runs-on: macos-latest
-    needs: build-and-release
-    if: success()
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Download DMG
+        uses: actions/download-artifact@v4
+        with:
+          name: dmg
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.build.outputs.version }}
+          name: PHTV ${{ needs.build.outputs.version }}
+          files: ${{ needs.build.outputs.dmg_name }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  update-appcast:
+    name: Update Appcast
+    runs-on: ubuntu-latest
+    needs: [build, release]
 
     steps:
       - name: Checkout
@@ -337,48 +199,131 @@ PYTHON_EOF
         with:
           ref: main
 
-      - name: Download DMG
+      - name: Update appcast.xml
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.build.outputs.version }}
+          BUILD: ${{ needs.build.outputs.build_number }}
+          SIZE: ${{ needs.build.outputs.dmg_size }}
+          SIGNATURE: ${{ needs.build.outputs.signature }}
+          DMG_NAME: ${{ needs.build.outputs.dmg_name }}
+          REPO: ${{ github.repository }}
         run: |
-          VERSION="${{ needs.build-and-release.outputs.version }}"
-          mkdir -p Releases/$VERSION
+          DATE=$(date -R)
+          DOWNLOAD_URL="https://github.com/$REPO/releases/download/v$VERSION/$DMG_NAME"
+          RELEASE_URL="https://github.com/$REPO/releases/tag/v$VERSION"
           
-          gh release download "v$VERSION" \
-            --pattern "PHTV-$VERSION.dmg" \
-            --dir "Releases/$VERSION"
-          
-          echo "✓ DMG downloaded"
+          # Create new item entry
+          cat > /tmp/new_item.xml << ITEMEOF
+        <item>
+            <title>PHTV $VERSION</title>
+            <link>$RELEASE_URL</link>
+            <sparkle:version>$BUILD</sparkle:version>
+            <sparkle:shortVersionString>$VERSION</sparkle:shortVersionString>
+            <description><![CDATA[
+                <h2>PHTV $VERSION</h2>
+                <p>See release notes: <a href="$RELEASE_URL">GitHub Release</a></p>
+            ]]></description>
+            <pubDate>$DATE</pubDate>
+            <enclosure
+                url="$DOWNLOAD_URL"
+                sparkle:version="$BUILD"
+                sparkle:shortVersionString="$VERSION"
+                sparkle:edSignature="$SIGNATURE"
+                length="$SIZE"
+                type="application/octet-stream"/>
+            <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+        </item>
 
-      - name: Calculate SHA256
-        id: sha
+ITEMEOF
+          
+          # Insert after marker comment using Python
+          python3 << 'PYEOF'
+import os
+import sys
+
+marker = '<!-- Most recent version first -->'
+version = os.environ['VERSION']
+
+with open('docs/appcast.xml', 'r') as f:
+    content = f.read()
+
+with open('/tmp/new_item.xml', 'r') as f:
+    new_item = f.read()
+
+if marker not in content:
+    print("❌ Marker not found in appcast.xml")
+    sys.exit(1)
+
+# Check if this version already exists
+if f'<sparkle:shortVersionString>{version}</sparkle:shortVersionString>' in content:
+    print(f"⚠️ Version {version} already in appcast, skipping")
+    sys.exit(0)
+
+# Insert new item after marker
+new_content = content.replace(marker, marker + '\n' + new_item)
+
+with open('docs/appcast.xml', 'w') as f:
+    f.write(new_content)
+
+print("✅ Appcast updated")
+PYEOF
+
+      - name: Commit and push
         run: |
-          VERSION="${{ needs.build-and-release.outputs.version }}"
-          DMG_PATH="Releases/$VERSION/PHTV-$VERSION.dmg"
-          SHA256=$(shasum -a 256 "$DMG_PATH" | awk '{print $1}')
-          echo "sha256=$SHA256" >> $GITHUB_OUTPUT
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/appcast.xml
+          
+          if git diff --cached --quiet; then
+            echo "No changes"
+          else
+            git commit -m "chore: update appcast for v${{ needs.build.outputs.version }}"
+            git push
+            echo "✅ Pushed"
+          fi
 
-      - name: Update Homebrew formula
+  update-homebrew:
+    name: Update Homebrew
+    runs-on: ubuntu-latest
+    needs: [build, release]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Download DMG and calculate SHA256
+        env:
+          VERSION: ${{ needs.build.outputs.version }}
+          DMG_NAME: ${{ needs.build.outputs.dmg_name }}
+          REPO: ${{ github.repository }}
         run: |
-          VERSION="${{ needs.build-and-release.outputs.version }}"
-          SHA256="${{ steps.sha.outputs.sha256 }}"
+          curl -sL "https://github.com/$REPO/releases/download/v$VERSION/$DMG_NAME" -o "$DMG_NAME"
+          SHA256=$(sha256sum "$DMG_NAME" | cut -d' ' -f1)
           
-          # Update version and sha256
-          sed -i '' "s/version \".*/version \"$VERSION\"/" homebrew/phtv.rb
-          sed -i '' "s/sha256 \".*/sha256 \"$SHA256\"/" homebrew/phtv.rb
-          
-          echo "✓ Updated homebrew/phtv.rb"
+          echo "SHA256=$SHA256" >> $GITHUB_ENV
+          echo "✅ SHA256: $SHA256"
 
-      - name: Commit and push formula
+      - name: Update formula
+        env:
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          sed -i "s/version \".*\"/version \"$VERSION\"/" homebrew/phtv.rb
+          sed -i "s/sha256 \".*\"/sha256 \"$SHA256\"/" homebrew/phtv.rb
+          
+          echo "✅ Updated homebrew/phtv.rb"
+
+      - name: Commit and push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add homebrew/phtv.rb
           
           if git diff --cached --quiet; then
-            echo "No changes to formula"
+            echo "No changes"
           else
-            git commit -m "chore: bump Homebrew formula to v${{ needs.build-and-release.outputs.version }}"
+            git commit -m "chore: bump Homebrew to v${{ needs.build.outputs.version }}"
             git push
-            echo "✓ Homebrew formula updated"
+            echo "✅ Pushed"
           fi
