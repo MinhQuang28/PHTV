@@ -398,3 +398,42 @@ jobs:
             git push
             echo "✅ Tap synced"
           fi
+
+      - name: Update Info.plist for next release
+        env:
+          VERSION: ${{ needs.build.outputs.version }}
+          BUILD_NUMBER: ${{ needs.build.outputs.build_number }}
+        run: |
+          # Pull latest changes first
+          git pull origin main --rebase
+          
+          python3 << 'EOF'
+          import plistlib
+          import os
+          
+          version = os.environ['VERSION']
+          build = os.environ['BUILD_NUMBER']
+          
+          with open('PHTV/Info.plist', 'rb') as f:
+              plist = plistlib.load(f)
+          
+          plist['CFBundleShortVersionString'] = version
+          plist['CFBundleVersion'] = build
+          
+          with open('PHTV/Info.plist', 'wb') as f:
+              plistlib.dump(plist, f)
+          
+          print(f"✅ Updated Info.plist to {version} ({build})")
+          EOF
+          
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add PHTV/Info.plist
+          
+          if git diff --cached --quiet; then
+            echo "No changes to Info.plist"
+          else
+            git commit -m "chore: bump version to $VERSION ($BUILD_NUMBER)"
+            git push
+            echo "✅ Info.plist committed"
+          fi
