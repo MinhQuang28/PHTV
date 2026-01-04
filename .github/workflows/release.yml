@@ -73,7 +73,7 @@ jobs:
           echo "Building PHTV version $VERSION..."
           
           xcodebuild \
-            -project PHTV/PHTV.xcodeproj \
+            -project PHTV.xcodeproj \
             -scheme PHTV \
             -configuration Release \
             -destination 'platform=macOS' \
@@ -89,6 +89,7 @@ jobs:
           echo "✓ Build completed successfully"
 
       - name: Create DMG with Applications shortcut
+        if: ${{ success() }}
         id: create_dmg
         run: |
           VERSION="${{ steps.version.outputs.version }}"
@@ -130,6 +131,7 @@ jobs:
           echo "dmg_name=$DMG_NAME" >> $GITHUB_OUTPUT
 
       - name: Download Sparkle tools
+        if: ${{ success() }}
         id: sparkle
         run: |
           SPARKLE_DIR="/tmp/Sparkle-for-Swift-Package-Manager"
@@ -147,10 +149,10 @@ jobs:
           echo "sparkle_bin=$SPARKLE_DIR/bin" >> $GITHUB_OUTPUT
 
       - name: Sign update with Sparkle
+        if: ${{ success() && secrets.SPARKLE_PRIVATE_KEY != '' }}
         id: sign_update
         env:
           SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
-        if: ${{ env.SPARKLE_PRIVATE_KEY != '' }}
         run: |
           DMG_PATH="${{ steps.create_dmg.outputs.dmg_path }}"
           SPARKLE_BIN="${{ steps.sparkle.outputs.sparkle_bin }}"
@@ -166,6 +168,7 @@ jobs:
           echo "signature=$SIGNATURE" >> $GITHUB_OUTPUT
 
       - name: Create release with GitHub
+        if: ${{ success() }}
         uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ steps.version.outputs.version }}
@@ -177,7 +180,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Update appcast feed
-        if: always()
+        if: ${{ success() }}
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           DMG_NAME="${{ steps.create_dmg.outputs.dmg_name }}"
@@ -217,14 +220,14 @@ jobs:
           echo "✓ Appcast entry created"
 
       - name: Checkout main and update appcast
-        if: always()
+        if: ${{ success() }}
         uses: actions/checkout@v4
         with:
           ref: main
           path: repo-main
 
       - name: Merge appcast entry into feed
-        if: always()
+        if: ${{ success() }}
         run: |
           FEED_PATH="repo-main/docs/appcast.xml"
           ENTRY_PATH="/tmp/appcast_entry.xml"
@@ -232,6 +235,10 @@ jobs:
           
           if [ ! -f "$FEED_PATH" ]; then
             echo "Error: appcast.xml not found"
+            exit 1
+          fi
+          if [ ! -f "$ENTRY_PATH" ]; then
+            echo "Error: appcast entry not found"
             exit 1
           fi
           
@@ -244,7 +251,7 @@ jobs:
           echo "✓ Appcast merged"
 
       - name: Commit and push appcast
-        if: always()
+        if: ${{ success() }}
         run: |
           cd repo-main
           git config user.name "github-actions[bot]"
