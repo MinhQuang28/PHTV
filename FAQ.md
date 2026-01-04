@@ -175,13 +175,18 @@ Hoặc trong Settings → Reset All (nếu có button này).
 
 ### Q30: Không mở được ứng dụng sau khi tải về?
 
-**A:** Nếu macOS báo lỗi "damaged" hoặc không thể mở ứng dụng, chạy lệnh sau trong Terminal:
+**A:** Nếu macOS báo lỗi **"PHTV is damaged"** hoặc **"can't be opened"**:
 
-```bash
+1. Mở **Terminal**
+2. Copy và chạy lệnh:
+
+```
 xattr -cr /Applications/PHTV.app
 ```
 
-Sau đó mở lại PHTV bình thường. Lệnh này xóa các thuộc tính quarantine mà macOS gán cho file tải từ Internet.
+3. Mở lại PHTV
+
+> **Giải thích:** Lệnh này xóa thuộc tính quarantine mà macOS Gatekeeper gán cho file tải từ Internet.
 
 ### Q31: PHTV không hoạt động?
 

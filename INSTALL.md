@@ -106,19 +106,23 @@ xcodebuild -scheme PHTV -configuration Release
 
 ## Xử lý sự cố
 
-<details>
-<summary><b>Không mở được ứng dụng sau khi tải về</b></summary>
+### ⚠️ Không mở được ứng dụng sau khi tải về
 
-**Nếu macOS báo lỗi "damaged" hoặc không thể mở ứng dụng:**
+Nếu macOS báo lỗi **"PHTV is damaged"** hoặc **"can't be opened"**, đây là do Gatekeeper chặn ứng dụng tải từ Internet.
 
-Chạy lệnh sau trong Terminal:
-```bash
+**Cách khắc phục:**
+
+1. Mở **Terminal** (tìm trong Spotlight hoặc Applications → Utilities)
+2. Copy và paste lệnh sau:
+
+```
 xattr -cr /Applications/PHTV.app
 ```
 
-Sau đó mở lại PHTV bình thường.
+3. Nhấn **Enter** để chạy
+4. Mở lại PHTV bình thường
 
-</details>
+---
 
 <details>
 <summary><b>PHTV không hoạt động</b></summary>
