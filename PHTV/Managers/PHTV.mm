@@ -602,6 +602,7 @@ extern "C" {
     // Note: WhatsApp removed - it needs precomposed but NOT Spotlight-style AX/per-char handling
     NSSet* _forcePrecomposedAppSet = [NSSet setWithArray:@[@"com.apple.Spotlight",
                                                             @"com.apple.systemuiserver",  // Spotlight runs under SystemUIServer
+                                                            @"com.apple.systempreferences",  // System Settings - search bar needs special handling
                                                             PHTV_BUNDLE]];  // PHTV itself - SwiftUI TextField needs HID tap posting
 
     // Apps that need precomposed Unicode but should use normal batched sending (not AX API)
