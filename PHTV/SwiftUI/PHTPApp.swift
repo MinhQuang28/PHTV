@@ -446,6 +446,7 @@ final class AppState: ObservableObject {
     // Sparkle update configuration
     @Published var updateCheckFrequency: UpdateCheckFrequency = .daily
     @Published var betaChannelEnabled: Bool = false
+    @Published var autoInstallUpdates: Bool = true  // Tự động cài đặt cập nhật
     @Published var showCustomUpdateBanner: Bool = false
     @Published var customUpdateBannerInfo: UpdateBannerInfo? = nil
 
@@ -647,12 +648,25 @@ final class AppState: ObservableObject {
             guard let self = self else { return }
             if let info = notification.object as? [String: String] {
                 Task { @MainActor in
-                    self.customUpdateBannerInfo = UpdateBannerInfo(
+                    let updateInfo = UpdateBannerInfo(
                         version: info["version"] ?? "",
                         releaseNotes: info["releaseNotes"] ?? "",
                         downloadURL: info["downloadURL"] ?? ""
                     )
-                    self.showCustomUpdateBanner = true
+                    self.customUpdateBannerInfo = updateInfo
+
+                    // Tự động cài đặt nếu được bật
+                    if self.autoInstallUpdates {
+                        NSLog("[AppState] Auto-installing update to version %@", updateInfo.version)
+                        // Gửi notification để Sparkle cài đặt
+                        NotificationCenter.default.post(
+                            name: NSNotification.Name("SparkleInstallUpdate"),
+                            object: nil
+                        )
+                    } else {
+                        // Hiển thị banner để người dùng chọn
+                        self.showCustomUpdateBanner = true
+                    }
                 }
             }
         }
@@ -818,6 +832,12 @@ final class AppState: ObservableObject {
         let updateInterval = defaults.integer(forKey: "SUScheduledCheckInterval")
         updateCheckFrequency = UpdateCheckFrequency.from(interval: updateInterval == 0 ? 86400 : updateInterval)
         betaChannelEnabled = defaults.bool(forKey: "SUEnableBetaChannel")
+        // Auto install updates - default to true if not set
+        if defaults.object(forKey: "vAutoInstallUpdates") == nil {
+            autoInstallUpdates = true
+        } else {
+            autoInstallUpdates = defaults.bool(forKey: "vAutoInstallUpdates")
+        }
 
         // Note: EmojiHotkeyManager is initialized in AppDelegate.applicationDidFinishLaunching
         // via EmojiHotkeyBridge.initializeEmojiHotkeyManager()
@@ -962,6 +982,7 @@ final class AppState: ObservableObject {
         // Save Sparkle settings
         defaults.set(updateCheckFrequency.rawValue, forKey: "SUScheduledCheckInterval")
         defaults.set(betaChannelEnabled, forKey: "SUEnableBetaChannel")
+        defaults.set(autoInstallUpdates, forKey: "vAutoInstallUpdates")
 
         defaults.synchronize()
 
@@ -1334,6 +1355,14 @@ final class AppState: ObservableObject {
                 name: NSNotification.Name("BetaChannelChanged"),
                 object: NSNumber(value: enabled)
             )
+        }.store(in: &cancellables)
+
+        // Auto install updates observer
+        $autoInstallUpdates.sink { [weak self] enabled in
+            guard let self = self, !self.isLoadingSettings else { return }
+            let defaults = UserDefaults.standard
+            defaults.set(enabled, forKey: "vAutoInstallUpdates")
+            defaults.synchronize()
         }.store(in: &cancellables)
     }
 

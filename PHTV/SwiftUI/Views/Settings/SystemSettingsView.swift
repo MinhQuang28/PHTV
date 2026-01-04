@@ -215,6 +215,17 @@ struct SystemSettingsView: View {
 
                         SettingsDivider()
 
+                        // Auto install toggle
+                        SettingsToggleRow(
+                            icon: "arrow.down.circle.fill",
+                            iconColor: .green,
+                            title: "Tự động cài đặt",
+                            subtitle: "Tự động cập nhật khi có phiên bản mới",
+                            isOn: $appState.autoInstallUpdates
+                        )
+
+                        SettingsDivider()
+
                         // Beta toggle
                         SettingsToggleRow(
                             icon: "testtube.2",
@@ -379,7 +390,7 @@ struct SystemSettingsView: View {
             "quickStartConsonant", "zAsConsonant", "freeMark", "fixChromiumBrowser",
             "sendKeyStepByStep", "autoRestoreEnglish", "useMacro", "macroInEnglish",
             "SwitchKeyStatus", "runOnStartup", "vShowIconOnDock", "themeColorHex",
-            "updateCheckFrequency", "betaChannelEnabled", "vMenuBarIconSize",
+            "updateCheckFrequency", "betaChannelEnabled", "vAutoInstallUpdates", "vMenuBarIconSize",
             "vUseVietnameseMenubarIcon", "vSettingsWindowAlwaysOnTop"
         ]
 
