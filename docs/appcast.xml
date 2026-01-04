@@ -10,7 +10,7 @@
         <item>
     <title>PHTV 1.4.3</title>
     <link>https://github.com/PhamHungTien/PHTV/releases/tag/v1.4.3</link>
-    <sparkle:version>16</sparkle:version>
+    <sparkle:version>17</sparkle:version>
     <sparkle:shortVersionString>1.4.3</sparkle:shortVersionString>
     <description><![CDATA[
         <h2>PHTV 1.4.3</h2>
@@ -19,7 +19,7 @@
     <pubDate>Sun, 04 Jan 2026 08:54:21 +0000</pubDate>
     <enclosure
         url="https://github.com/PhamHungTien/PHTV/releases/download/v1.4.3/PHTV-1.4.3.dmg"
-        sparkle:version="16"
+        sparkle:version="17"
         sparkle:shortVersionString="1.4.3"
         sparkle:edSignature="IT/lXWXE/aRxoYkt70FT+2wm+nPgnxha65UL2AAIyoFw42xxhg2HeNczPIrDOYoUYZhlfirfw30AMn3MADo+AQ=="
         length="13043418"
