@@ -422,6 +422,7 @@ final class AppState: ObservableObject {
     @Published var customUpdateBannerInfo: UpdateBannerInfo? = nil
 
     private var cancellables = Set<AnyCancellable>()
+    private var notificationObservers: [NSObjectProtocol] = []
     private var isLoadingSettings = false
     private var isUpdatingRunOnStartup = false
 
@@ -512,7 +513,7 @@ final class AppState: ObservableObject {
     }
 
     private func setupNotificationObservers() {
-        NotificationCenter.default.addObserver(
+        let observer1 = NotificationCenter.default.addObserver(
             forName: NSNotification.Name("AccessibilityStatusChanged"),
             object: nil,
             queue: .main
@@ -524,9 +525,10 @@ final class AppState: ObservableObject {
                 }
             }
         }
+        notificationObservers.append(observer1)
 
         // Listen for language changes from manual actions (hotkey, UI, input type change)
-        NotificationCenter.default.addObserver(
+        let observer2 = NotificationCenter.default.addObserver(
             forName: NSNotification.Name("LanguageChangedFromBackend"),
             object: nil,
             queue: .main
@@ -545,9 +547,10 @@ final class AppState: ObservableObject {
                 }
             }
         }
+        notificationObservers.append(observer2)
 
         // Listen for language changes from excluded apps (no beep sound)
-        NotificationCenter.default.addObserver(
+        let observer3 = NotificationCenter.default.addObserver(
             forName: NSNotification.Name("LanguageChangedFromExcludedApp"),
             object: nil,
             queue: .main
@@ -562,9 +565,10 @@ final class AppState: ObservableObject {
                 }
             }
         }
+        notificationObservers.append(observer3)
 
         // Listen for language changes from smart switch (no beep sound)
-        NotificationCenter.default.addObserver(
+        let observer4 = NotificationCenter.default.addObserver(
             forName: NSNotification.Name("LanguageChangedFromSmartSwitch"),
             object: nil,
             queue: .main
@@ -579,9 +583,10 @@ final class AppState: ObservableObject {
                 }
             }
         }
+        notificationObservers.append(observer4)
 
         // Listen for update check responses from backend
-        NotificationCenter.default.addObserver(
+        let observer5 = NotificationCenter.default.addObserver(
             forName: NSNotification.Name("CheckForUpdatesResponse"),
             object: nil,
             queue: .main
@@ -592,7 +597,7 @@ final class AppState: ObservableObject {
                 let updateAvailable = (response["updateAvailable"] as? Bool) ?? false
                 let message = response["message"] as? String ?? ""
                 let latestVersion = response["latestVersion"] as? String ?? ""
-                
+
                 if updateAvailable && !message.isEmpty && !latestVersion.isEmpty {
                     Task { @MainActor in
                         // Show update banner on startup
@@ -603,9 +608,10 @@ final class AppState: ObservableObject {
                 }
             }
         }
+        notificationObservers.append(observer5)
 
         // Sparkle custom update banner
-        NotificationCenter.default.addObserver(
+        let observer6 = NotificationCenter.default.addObserver(
             forName: NSNotification.Name("SparkleShowUpdateBanner"),
             object: nil,
             queue: .main
@@ -622,6 +628,15 @@ final class AppState: ObservableObject {
                 }
             }
         }
+        notificationObservers.append(observer6)
+    }
+
+    /// Cleanup notification observers (call on app termination if needed)
+    func cleanupObservers() {
+        notificationObservers.forEach { observer in
+            NotificationCenter.default.removeObserver(observer)
+        }
+        notificationObservers.removeAll()
     }
 
     func checkAccessibilityPermission() {

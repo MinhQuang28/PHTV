@@ -624,6 +624,9 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
 
     // End typing stats session
     [[NSNotificationCenter defaultCenter] postNotificationName:@"TypingStatsSessionEnd" object:nil];
+
+    // Cleanup AppState notification observers to prevent leaks
+    [AppState.shared cleanupObservers];
 }
 
 #pragma mark - SwiftUI Bridge
