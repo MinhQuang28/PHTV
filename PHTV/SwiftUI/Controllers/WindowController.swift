@@ -90,7 +90,9 @@ class SwiftUIWindowController: NSWindowController, NSWindowDelegate {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            self?.updateTitlebarOpacity()
+            Task { @MainActor in
+                self?.updateTitlebarOpacity()
+            }
         }
     }
 
