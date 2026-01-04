@@ -255,13 +255,6 @@ jobs:
 
       - name: Commit and push appcast
         if: ${{ success() }}
-
-      - name: Upload build log
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: xcodebuild-log
-          path: xcodebuild.log
         run: |
           cd repo-main
           git config user.name "github-actions[bot]"
@@ -275,6 +268,13 @@ jobs:
             git push
             echo "✓ Appcast updated and pushed"
           fi
+
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcodebuild-log
+          path: xcodebuild.log
 
   update-homebrew:
     name: Update Homebrew Formula
