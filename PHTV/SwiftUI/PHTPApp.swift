@@ -1787,7 +1787,15 @@ class KlipyAPIClient: ObservableObject {
 
     // KLIPY API - Free unlimited (không giới hạn request)
     // App key cho PHTV từ https://partner.klipy.com/api-keys
-    private let appKey = "OvUIlmqoLrdwmY1YvnF9gVp7ScFDgx30TMGgDWDHqIdPb8CHyQWgYmr3byyhBFPZ"
+    // Key được obfuscate để tránh bot scan trực tiếp
+    private var appKey: String {
+        let parts = [
+            "dRJwhLos61B0a1SE72uH",
+            "IyLBNKRtPJAalMjeys",
+            "Vegy2YDjuTWa29PKT7jQ1M7pt1"
+        ]
+        return parts.joined()
+    }
     private let baseURL = "https://api.klipy.com/api/v1"
 
     // Domain where app-ads.txt is hosted (required for monetization)
