@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.6] - 2026-01-04
+
+### Changed
+- **RAM Optimization**: Cache menu bar icons, sử dụng @AppStorage thay vì @EnvironmentObject
+- **Lazy Loading Settings**: Implement lazy loading cho các tab Settings để giảm memory usage
+- **Bug Report Improvements**: Hiển thị full error/warning messages, ưu tiên errors trước warnings, tăng log time range
+
+### Fixed
+- **Memory Leaks**: Cleanup NotificationCenter observers trong AppState và TypingStatsManager
+- **WindowController Observer**: Sử dụng block-based pattern với weak self
+- **WKWebView Cleanup**: Thêm cleanup trong ReleaseNotesView với Coordinator và dismantleNSView
+- **MacroListView Animation**: Tối ưu animation performance
+
+## [1.4.5] - 2026-01-04
+
+### Added
+- **Check for Updates in Menu Bar**: Thêm menu item "Kiểm tra cập nhật" vào menu bar
+- **Language Switcher UI**: Cải thiện UI chuyển đổi ngôn ngữ với Picker và checkmark display
+
+## [1.4.4] - 2026-01-04
+
+### Fixed
+- **Vietnamese Input in Apple Apps**: Thêm nhiều Apple apps vào forcePrecomposedAppSet
+  - System Settings (search bar)
+  - Finder (search bar)
+  - Weather, Podcasts, Passwords, Books
+  - Reminders, Journal, Game Center
+
+## [1.4.3] - 2026-01-04
+
+### Changed
+- **CI/CD Improvements**: Cải thiện workflow tự động
+- **Auto-increment Build Number**: Tự động tăng build number và commit Info.plist sau release
+
+### Fixed
+- **Build Number**: Sửa build number cho phiên bản 1.4.3
+
 ## [1.4.2] - 2026-01-04
 
 ### Added
@@ -318,7 +355,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Macro (gõ tắt)
 - Hoàn toàn offline
 
-[Unreleased]: https://github.com/PhamHungTien/PHTV/compare/v1.3.8...HEAD
+[Unreleased]: https://github.com/PhamHungTien/PHTV/compare/v1.4.6...HEAD
+[1.4.6]: https://github.com/PhamHungTien/PHTV/compare/v1.4.5...v1.4.6
+[1.4.5]: https://github.com/PhamHungTien/PHTV/compare/v1.4.4...v1.4.5
+[1.4.4]: https://github.com/PhamHungTien/PHTV/compare/v1.4.3...v1.4.4
+[1.4.3]: https://github.com/PhamHungTien/PHTV/compare/v1.4.2...v1.4.3
+[1.4.2]: https://github.com/PhamHungTien/PHTV/compare/v1.3.8...v1.4.2
 [1.3.8]: https://github.com/PhamHungTien/PHTV/compare/v1.3.7...v1.3.8
 [1.3.7]: https://github.com/PhamHungTien/PHTV/compare/v1.3.6...v1.3.7
 [1.3.6]: https://github.com/PhamHungTien/PHTV/compare/v1.3.5...v1.3.6
