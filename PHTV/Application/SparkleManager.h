@@ -29,8 +29,7 @@ NS_ASSUME_NONNULL_BEGIN
 /// Enable or disable beta channel
 - (void)setBetaChannelEnabled:(BOOL)enabled;
 
-/// Install update silently in background (no UI)
-- (void)installUpdateSilently;
+// installUpdateSilently removed - auto-install is now handled directly by PHSilentUserDriver
 
 @end
 

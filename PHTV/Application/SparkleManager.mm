@@ -81,14 +81,9 @@
     [[NSUserDefaults standardUserDefaults] synchronize];
 }
 
-- (void)installUpdateSilently {
-    NSLog(@"[Sparkle] Installing update silently in background...");
-    self.isManualCheck = NO;
-
-    // Use checkForUpdatesInBackground which will trigger automatic download
-    // Combined with automaticallyDownloadsUpdates = YES, this will silently install
-    [self.updater checkForUpdatesInBackground];
-}
+// installUpdateSilently removed - auto-install is now handled directly by PHSilentUserDriver
+// When silentAutoInstallEnabled is true, PHSilentUserDriver automatically calls
+// reply(SPUUserUpdateChoiceInstall) in showUpdateFoundWithAppcastItem:
 
 #pragma mark - SPUUpdaterDelegate
 
@@ -102,20 +97,11 @@
 }
 
 - (void)updater:(SPUUpdater *)updater didFindValidUpdate:(SUAppcastItem *)item {
-    NSLog(@"[Sparkle] Update found: %@ (%@)", item.displayVersionString, item.versionString);
-    NSLog(@"[Sparkle] didFindValidUpdate - itemDescription length: %lu", (unsigned long)[item.itemDescription length]);
+    // PHSilentUserDriver now sends SparkleUpdateFound notification in showUpdateFoundWithAppcastItem:
+    // This delegate method is just for logging
+    NSLog(@"[Sparkle] didFindValidUpdate: %@ (%@)", item.displayVersionString, item.versionString);
 
-    // Notify SwiftUI - always notify when update is found
-    NSDictionary *info = @{
-        @"version": item.displayVersionString ?: @"",
-        @"releaseNotes": item.itemDescription ?: @"",
-        @"downloadURL": item.fileURL.absoluteString ?: @""
-    };
-
-    [[NSNotificationCenter defaultCenter] postNotificationName:@"SparkleUpdateFound" object:info];
-
-    // Reset flag after check
-    self.isManualCheck = NO;
+    // Don't reset isManualCheck here - let the user driver handle it
 }
 
 - (void)updaterDidNotFindUpdate:(SPUUpdater *)updater {
@@ -162,23 +148,11 @@
 - (void)standardUserDriverWillHandleShowingUpdate:(BOOL)handleShowingUpdate
                                         forUpdate:(SUAppcastItem *)update
                                             state:(SPUUserUpdateState *)state {
-    // Intercept to show custom update banner
-    NSLog(@"[Sparkle] Showing custom update UI for: %@", update.displayVersionString);
-    NSString *releaseNotes = update.itemDescription ?: @"";
-    NSLog(@"[Sparkle] Release notes length: %lu", (unsigned long)[releaseNotes length]);
-    if (releaseNotes.length > 0) {
-        NSLog(@"[Sparkle] Release notes preview: %@", [releaseNotes substringToIndex:MIN(200, releaseNotes.length)]);
-    } else {
-        NSLog(@"[Sparkle] Release notes: EMPTY");
-    }
-
-    NSDictionary *info = @{
-        @"version": update.displayVersionString ?: @"",
-        @"releaseNotes": update.itemDescription ?: @"",
-        @"downloadURL": update.fileURL.absoluteString ?: @""
-    };
-
-    [[NSNotificationCenter defaultCenter] postNotificationName:@"SparkleShowUpdateBanner" object:info];
+    // PHSilentUserDriver now handles showing update UI via showUpdateFoundWithAppcastItem:
+    // This delegate method is just for logging
+    NSLog(@"[Sparkle] standardUserDriverWillHandleShowingUpdate: %@ (handleShowingUpdate: %@)",
+          update.displayVersionString,
+          handleShowingUpdate ? @"YES" : @"NO");
 
     // Reset flag after showing update
     self.isManualCheck = NO;

@@ -449,7 +449,7 @@ final class AppState: ObservableObject {
     @Published var autoInstallUpdates: Bool = true  // Tự động cài đặt cập nhật
     @Published var showCustomUpdateBanner: Bool = false
     @Published var customUpdateBannerInfo: UpdateBannerInfo? = nil
-    @Published var showNoUpdateAlert: Bool = false  // Hiển thị thông báo "đã là phiên bản mới nhất"
+    // showNoUpdateAlert removed - now handled by AppDelegate with NSAlert directly
 
     private var cancellables = Set<AnyCancellable>()
     private var notificationObservers: [NSObjectProtocol] = []
@@ -640,7 +640,8 @@ final class AppState: ObservableObject {
         }
         notificationObservers.append(observer5)
 
-        // Sparkle custom update banner
+        // Sparkle custom update banner (only sent when auto-install is OFF)
+        // Auto-install is now handled directly by PHSilentUserDriver
         let observer6 = NotificationCenter.default.addObserver(
             forName: NSNotification.Name("SparkleShowUpdateBanner"),
             object: nil,
@@ -655,37 +656,16 @@ final class AppState: ObservableObject {
                         downloadURL: info["downloadURL"] ?? ""
                     )
                     self.customUpdateBannerInfo = updateInfo
-
-                    // Tự động cài đặt nếu được bật
-                    if self.autoInstallUpdates {
-                        NSLog("[AppState] Auto-installing update to version %@ silently", updateInfo.version)
-                        // Gửi notification để Sparkle cài đặt trong nền (không hiện UI)
-                        NotificationCenter.default.post(
-                            name: NSNotification.Name("SparkleInstallUpdateSilently"),
-                            object: nil
-                        )
-                        // Không hiển thị gì cả
-                    } else {
-                        // Hiển thị banner để người dùng chọn
-                        self.showCustomUpdateBanner = true
-                    }
+                    // Show banner for user to choose (auto-install is OFF)
+                    self.showCustomUpdateBanner = true
+                    NSLog("[AppState] Showing update banner for version %@", updateInfo.version)
                 }
             }
         }
         notificationObservers.append(observer6)
 
-        // Sparkle no update found (manual check only)
-        let observer7 = NotificationCenter.default.addObserver(
-            forName: NSNotification.Name("SparkleNoUpdateFound"),
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            guard let self = self else { return }
-            Task { @MainActor in
-                self.showNoUpdateAlert = true
-            }
-        }
-        notificationObservers.append(observer7)
+        // SparkleNoUpdateFound is now handled by AppDelegate with NSAlert directly
+        // This provides better UX as it doesn't require the settings window to be open
 
         // Listen for app termination
         let terminateObserver = NotificationCenter.default.addObserver(

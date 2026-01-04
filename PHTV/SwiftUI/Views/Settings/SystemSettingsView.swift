@@ -371,11 +371,8 @@ struct SystemSettingsView: View {
         } message: {
             Text(successMessage)
         }
-        .alert("Đã cập nhật", isPresented: $appState.showNoUpdateAlert) {
-            Button("OK") {}
-        } message: {
-            Text("Bạn đang sử dụng phiên bản mới nhất của PHTV.")
-        }
+        // showNoUpdateAlert removed - now handled by AppDelegate with NSAlert directly
+        // This allows the alert to show even when settings window is not open
     }
 
     private func formatDate(_ date: Date) -> String {

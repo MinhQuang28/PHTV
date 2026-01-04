@@ -1198,19 +1198,19 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
     });
 }
 
-// Disabled: No longer show "up to date" message to avoid annoying users
-// Only notify when there IS an update available
-//- (void)handleSparkleNoUpdate:(NSNotification *)notification {
-//    dispatch_async(dispatch_get_main_queue(), ^{
-//        NSString *currentVersion = [[NSBundle mainBundle] infoDictionary][@"CFBundleShortVersionString"];
-//        [[NSNotificationCenter defaultCenter] postNotificationName:@"CheckForUpdatesResponse"
-//                                                            object:@{
-//            @"message": [NSString stringWithFormat:@"Phiên bản hiện tại (%@) là mới nhất", currentVersion],
-//            @"isError": @NO,
-//            @"updateAvailable": @NO
-//        }];
-//    });
-//}
+// Show "up to date" alert when user manually checks for updates (only for manual checks)
+- (void)handleSparkleNoUpdate:(NSNotification *)notification {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        NSString *currentVersion = [[NSBundle mainBundle] infoDictionary][@"CFBundleShortVersionString"];
+
+        NSAlert *alert = [[NSAlert alloc] init];
+        [alert setMessageText:@"Đã cập nhật"];
+        [alert setInformativeText:[NSString stringWithFormat:@"Bạn đang sử dụng phiên bản mới nhất của PHTV (%@).", currentVersion]];
+        [alert addButtonWithTitle:@"OK"];
+        [alert setAlertStyle:NSAlertStyleInformational];
+        [alert runModal];
+    });
+}
 
 - (void)handleUpdateFrequencyChanged:(NSNotification *)notification {
     if (NSNumber *interval = notification.object) {
@@ -1232,11 +1232,7 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
     [[SparkleManager shared] checkForUpdatesWithFeedback];
 }
 
-- (void)handleSparkleInstallUpdateSilently:(NSNotification *)notification {
-    NSLog(@"[Sparkle] Silent update install requested (auto-update enabled)");
-    // Install update silently in background without any UI
-    [[SparkleManager shared] installUpdateSilently];
-}
+// handleSparkleInstallUpdateSilently removed - auto-install is now handled directly by PHSilentUserDriver
 
 - (void)handleSettingsReset:(NSNotification *)notification {
     // Settings have been reset, post confirmation to UI
@@ -2339,11 +2335,11 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
                                                  name:@"SparkleUpdateFound"
                                                object:NULL];
 
-    // Disabled: No longer show "up to date" message
-    // [[NSNotificationCenter defaultCenter] addObserver:self
-    //                                          selector:@selector(handleSparkleNoUpdate:)
-    //                                              name:@"SparkleNoUpdateFound"
-    //                                            object:NULL];
+    // Show "up to date" alert when user manually checks (SparkleManager only sends this for manual checks)
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(handleSparkleNoUpdate:)
+                                                 name:@"SparkleNoUpdateFound"
+                                               object:NULL];
 
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(handleUpdateFrequencyChanged:)
@@ -2360,9 +2356,6 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
                                                  name:@"SparkleInstallUpdate"
                                                object:nil];
 
-    [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(handleSparkleInstallUpdateSilently:)
-                                                 name:@"SparkleInstallUpdateSilently"
-                                               object:nil];
+    // SparkleInstallUpdateSilently observer removed - auto-install is now handled directly by PHSilentUserDriver
 }
 @end
