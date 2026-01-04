@@ -173,7 +173,17 @@ Hoặc trong Settings → Reset All (nếu có button này).
 
 ## Khắc phục sự cố
 
-### Q30: PHTV không hoạt động?
+### Q30: Không mở được ứng dụng sau khi tải về?
+
+**A:** Nếu macOS báo lỗi "damaged" hoặc không thể mở ứng dụng, chạy lệnh sau trong Terminal:
+
+```bash
+xattr -cr /Applications/PHTV.app
+```
+
+Sau đó mở lại PHTV bình thường. Lệnh này xóa các thuộc tính quarantine mà macOS gán cho file tải từ Internet.
+
+### Q31: PHTV không hoạt động?
 
 **A:**
 
@@ -182,7 +192,7 @@ Hoặc trong Settings → Reset All (nếu có button này).
 3. Restart ứng dụng gặp lỗi
 4. Tạo issue trên GitHub
 
-### Q31: Phím tắt không hoạt động?
+### Q32: Phím tắt không hoạt động?
 
 **A:**
 
@@ -190,17 +200,17 @@ Hoặc trong Settings → Reset All (nếu có button này).
 2. Kiểm tra System Preferences → Keyboard → Shortcuts
 3. Tìm xung đột với ứng dụng khác
 
-### Q32: Tiếng Việt gõ ra sai?
+### Q33: Tiếng Việt gõ ra sai?
 
 **A:** Kiểm tra Input Method (Telex/VNI) và Character Set (Unicode/TCVN3).
 
 ## Phát triển
 
-### Q33: Làm sao để đóng góp?
+### Q34: Làm sao để đóng góp?
 
 **A:** Xem [CONTRIBUTING.md](CONTRIBUTING.md) - Fork, tạo branch, commit, PR.
 
-### Q34: Engine gõ là gì?
+### Q35: Engine gõ là gì?
 
 **A:** Dựa trên [OpenKey](https://github.com/tuyenvm/OpenKey) - dự án mã nguồn mở tiếng Việt.
 

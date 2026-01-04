@@ -184,6 +184,8 @@ open https://phamhungtien.com/PHTV/
 open https://github.com/PhamHungTien/PHTV/releases/latest
 ```
 
+> ⚠️ **Lỗi khi mở ứng dụng?** Nếu macOS báo lỗi "damaged" hoặc không thể mở, chạy: `xattr -cr /Applications/PHTV.app`
+
 ### Build từ source
 
 ```bash

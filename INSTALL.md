@@ -107,6 +107,20 @@ xcodebuild -scheme PHTV -configuration Release
 ## Xử lý sự cố
 
 <details>
+<summary><b>Không mở được ứng dụng sau khi tải về</b></summary>
+
+**Nếu macOS báo lỗi "damaged" hoặc không thể mở ứng dụng:**
+
+Chạy lệnh sau trong Terminal:
+```bash
+xattr -cr /Applications/PHTV.app
+```
+
+Sau đó mở lại PHTV bình thường.
+
+</details>
+
+<details>
 <summary><b>PHTV không hoạt động</b></summary>
 
 **Kiểm tra:**
