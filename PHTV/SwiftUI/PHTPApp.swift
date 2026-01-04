@@ -632,7 +632,7 @@ final class AppState: ObservableObject {
     }
 
     /// Cleanup notification observers (call on app termination if needed)
-    func cleanupObservers() {
+    @objc func cleanupObservers() {
         notificationObservers.forEach { observer in
             NotificationCenter.default.removeObserver(observer)
         }
