@@ -1232,6 +1232,12 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
     [[SparkleManager shared] checkForUpdatesWithFeedback];
 }
 
+- (void)handleSparkleInstallUpdateSilently:(NSNotification *)notification {
+    NSLog(@"[Sparkle] Silent update install requested (auto-update enabled)");
+    // Install update silently in background without any UI
+    [[SparkleManager shared] installUpdateSilently];
+}
+
 - (void)handleSettingsReset:(NSNotification *)notification {
     // Settings have been reset, post confirmation to UI
     dispatch_async(dispatch_get_main_queue(), ^{
@@ -2352,6 +2358,11 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(handleSparkleInstallUpdate:)
                                                  name:@"SparkleInstallUpdate"
+                                               object:nil];
+
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(handleSparkleInstallUpdateSilently:)
+                                                 name:@"SparkleInstallUpdateSilently"
                                                object:nil];
 }
 @end

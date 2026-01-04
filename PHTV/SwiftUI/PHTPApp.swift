@@ -658,12 +658,13 @@ final class AppState: ObservableObject {
 
                     // Tự động cài đặt nếu được bật
                     if self.autoInstallUpdates {
-                        NSLog("[AppState] Auto-installing update to version %@", updateInfo.version)
-                        // Gửi notification để Sparkle cài đặt
+                        NSLog("[AppState] Auto-installing update to version %@ silently", updateInfo.version)
+                        // Gửi notification để Sparkle cài đặt trong nền (không hiện UI)
                         NotificationCenter.default.post(
-                            name: NSNotification.Name("SparkleInstallUpdate"),
+                            name: NSNotification.Name("SparkleInstallUpdateSilently"),
                             object: nil
                         )
+                        // Không hiển thị gì cả
                     } else {
                         // Hiển thị banner để người dùng chọn
                         self.showCustomUpdateBanner = true

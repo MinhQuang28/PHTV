@@ -81,6 +81,15 @@
     [[NSUserDefaults standardUserDefaults] synchronize];
 }
 
+- (void)installUpdateSilently {
+    NSLog(@"[Sparkle] Installing update silently in background...");
+    self.isManualCheck = NO;
+
+    // Use checkForUpdatesInBackground which will trigger automatic download
+    // Combined with automaticallyDownloadsUpdates = YES, this will silently install
+    [self.updater checkForUpdatesInBackground];
+}
+
 #pragma mark - SPUUpdaterDelegate
 
 - (nullable NSString *)feedURLStringForUpdater:(SPUUpdater *)updater {
