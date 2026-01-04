@@ -66,8 +66,20 @@ final class TypingStatsManager: ObservableObject {
         setupNotificationObservers()
     }
 
-    // Note: deinit not needed - TypingStatsManager is a singleton that lives for the app lifetime
-    // Timer and observers are automatically cleaned up when app terminates
+    nonisolated deinit {
+        // Clean up timer and observers to prevent memory leaks
+        // Note: Must use MainActor.assumeIsolated since this is a @MainActor class
+        MainActor.assumeIsolated {
+            saveTimer?.invalidate()
+            saveTimer = nil
+
+            // Remove all notification observers
+            observers.forEach { observer in
+                NotificationCenter.default.removeObserver(observer)
+            }
+            observers.removeAll()
+        }
+    }
 
     // MARK: - Notification Observers
 
@@ -234,7 +246,7 @@ final class TypingStatsManager: ObservableObject {
     func saveStats() {
         if let encoded = try? JSONEncoder().encode(stats) {
             defaults.set(encoded, forKey: statsKey)
-            defaults.synchronize()
+            // Note: synchronize() is deprecated and unnecessary - UserDefaults auto-saves periodically
         }
     }
 
@@ -258,6 +270,18 @@ final class TypingStatsManager: ObservableObject {
                 self?.saveStats()
             }
         }
+    }
+
+    /// Pause auto-save timer to reduce CPU/battery usage
+    func pauseAutoSave() {
+        saveTimer?.invalidate()
+        saveTimer = nil
+    }
+
+    /// Resume auto-save timer
+    func resumeAutoSave() {
+        guard saveTimer == nil else { return }
+        setupAutoSave()
     }
 
     // MARK: - Format Helpers
