@@ -2369,23 +2369,19 @@ struct EmojiCategoriesView: View {
     private let database = EmojiDatabase.shared
     @State private var selectedSubCategory = 0
     @State private var searchText = ""
+    @State private var searchResults: [EmojiItem] = []
+    @State private var searchTask: DispatchWorkItem?
     @FocusState private var isSearchFocused: Bool
     @Namespace private var subCategoryNamespace
 
     private let iconColumns = Array(repeating: GridItem(.flexible(), spacing: 12), count: 7)
 
-    // Filter emojis based on search text
-    private var filteredEmojis: [EmojiItem] {
+    // Display emojis - from search results or current category
+    private var displayedEmojis: [EmojiItem] {
         if searchText.isEmpty {
             return database.categories[selectedSubCategory].emojis
         }
-
-        // Search across all categories
-        return database.categories.flatMap { $0.emojis }
-            .filter { emoji in
-                emoji.name.localizedCaseInsensitiveContains(searchText) ||
-                emoji.keywords.contains { $0.localizedCaseInsensitiveContains(searchText) }
-            }
+        return searchResults
     }
 
     var body: some View {
@@ -2399,9 +2395,26 @@ struct EmojiCategoriesView: View {
                     .textFieldStyle(.plain)
                     .font(.system(size: 13))
                     .focused($isSearchFocused)
+                    .onChange(of: searchText) { newValue in
+                        // Cancel previous search
+                        searchTask?.cancel()
+
+                        if newValue.isEmpty {
+                            searchResults = []
+                        } else {
+                            // Debounce search
+                            let task = DispatchWorkItem {
+                                searchResults = database.search(newValue)
+                            }
+                            searchTask = task
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3, execute: task)
+                        }
+                    }
                 if !searchText.isEmpty {
                     Button(action: {
+                        searchTask?.cancel()
                         searchText = ""
+                        searchResults = []
                         isSearchFocused = true
                     }) {
                         Image(systemName: "xmark.circle.fill")
@@ -2461,7 +2474,7 @@ struct EmojiCategoriesView: View {
 
             // Emoji grid for selected category or search results
             ScrollView {
-                if filteredEmojis.isEmpty {
+                if displayedEmojis.isEmpty {
                     VStack(spacing: 8) {
                         Image(systemName: "magnifyingglass")
                             .font(.system(size: 32))
@@ -2474,7 +2487,7 @@ struct EmojiCategoriesView: View {
                     .padding(40)
                 } else {
                     LazyVGrid(columns: iconColumns, spacing: 12) {
-                        ForEach(filteredEmojis, id: \.id) { emojiItem in
+                        ForEach(displayedEmojis, id: \.id) { emojiItem in
                             Button(action: {
                                 onEmojiSelected(emojiItem.emoji)
                             }) {
@@ -2867,6 +2880,8 @@ struct UnifiedContentView: View {
     private let database = EmojiDatabase.shared
 
     @State private var searchText = ""
+    @State private var emojiSearchResults: [EmojiItem] = []
+    @State private var searchTask: DispatchWorkItem?
     @FocusState private var isSearchFocused: Bool
 
     private let iconColumns = Array(repeating: GridItem(.flexible(), spacing: 12), count: 7)
@@ -2889,18 +2904,28 @@ struct UnifiedContentView: View {
                     .font(.system(size: 13))
                     .focused($isSearchFocused)
                     .onChange(of: searchText) { newValue in
-                        if !newValue.isEmpty {
-                            // Debounce search
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                if searchText == newValue {
-                                    performSearch(query: newValue)
-                                }
+                        // Cancel previous search task
+                        searchTask?.cancel()
+
+                        if newValue.isEmpty {
+                            // Clear results immediately
+                            emojiSearchResults = []
+                            klipyClient.searchResults = []
+                            klipyClient.stickerSearchResults = []
+                        } else {
+                            // Debounce search - wait for user to stop typing
+                            let task = DispatchWorkItem { [self] in
+                                performSearch(query: newValue)
                             }
+                            searchTask = task
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35, execute: task)
                         }
                     }
                 if !searchText.isEmpty {
                     Button(action: {
+                        searchTask?.cancel()
                         searchText = ""
+                        emojiSearchResults = []
                         isSearchFocused = true
                     }) {
                         Image(systemName: "xmark.circle.fill")
@@ -2931,9 +2956,8 @@ struct UnifiedContentView: View {
             VStack(alignment: .leading, spacing: 16) {
                 // Emojis Section
                 if !searchText.isEmpty {
-                    // Search results for emojis
-                    let emojiResults = database.search(searchText)
-                    if !emojiResults.isEmpty {
+                    // Search results for emojis (cached)
+                    if !emojiSearchResults.isEmpty {
                         VStack(alignment: .leading, spacing: 10) {
                             HStack {
                                 Image(systemName: "face.smiling")
@@ -2947,7 +2971,7 @@ struct UnifiedContentView: View {
                             .padding(.horizontal, 4)
 
                             LazyVGrid(columns: iconColumns, spacing: 12) {
-                                ForEach(emojiResults.prefix(14), id: \.id) { emojiItem in
+                                ForEach(emojiSearchResults.prefix(14), id: \.id) { emojiItem in
                                     Button(action: {
                                         onEmojiSelected(emojiItem.emoji)
                                     }) {
@@ -3118,7 +3142,7 @@ struct UnifiedContentView: View {
                 // Empty state
                 if !searchText.isEmpty {
                     // Search empty state
-                    let hasAnyResults = !database.search(searchText).isEmpty ||
+                    let hasAnyResults = !emojiSearchResults.isEmpty ||
                                        !klipyClient.searchResults.isEmpty ||
                                        !klipyClient.stickerSearchResults.isEmpty
                     if !hasAnyResults {
@@ -3174,11 +3198,12 @@ struct UnifiedContentView: View {
 
     // Perform search across all content types
     private func performSearch(query: String) {
+        // Search Emojis (cached to avoid repeated computation)
+        emojiSearchResults = database.search(query)
         // Search GIFs
         klipyClient.search(query: query)
         // Search Stickers
         klipyClient.searchStickers(query: query)
-        // Emoji search is done via database.search() in the view
     }
 
     // Helper functions to copy media
