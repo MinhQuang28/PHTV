@@ -604,6 +604,13 @@ extern "C" {
                                                             @"com.apple.systemuiserver",  // Spotlight runs under SystemUIServer
                                                             @"com.apple.systempreferences",  // System Settings - search bar needs special handling
                                                             @"com.apple.finder",  // Finder - search bar needs special handling
+                                                            @"com.apple.mobilephone",  // FaceTime/Phone
+                                                            @"com.apple.AddressBook",  // Contacts
+                                                            @"com.apple.VoiceMemos",  // Voice Memos
+                                                            @"com.apple.iCal",  // Calendar
+                                                            @"com.apple.configurator.ui",  // Apple Configurator
+                                                            @"com.apple.mail",  // Mail
+                                                            @"com.apple.Music",  // Music
                                                             PHTV_BUNDLE]];  // PHTV itself - SwiftUI TextField needs HID tap posting
 
     // Apps that need precomposed Unicode but should use normal batched sending (not AX API)
