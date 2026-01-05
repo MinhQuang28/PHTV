@@ -80,14 +80,17 @@ struct SettingsWindowContent: View {
         .onAppear {
             // Show dock icon when settings window opens
             // This prevents the window from being hidden when app loses focus
-            NSLog("[SettingsWindowContent] onAppear - posting ShowDockIcon notification")
+            NSLog("[SettingsWindowContent] onAppear - showing dock icon")
             
-            // Use notification to communicate with ObjC AppDelegate
-            NotificationCenter.default.post(name: NSNotification.Name("PHTVShowDockIcon"), object: nil, userInfo: ["visible": true])
-            
-            // Also set activation policy directly as backup
+            // Set activation policy directly (works immediately)
             NSApp.setActivationPolicy(.regular)
             NSApp.activate(ignoringOtherApps: true)
+            
+            // Also post notification for AppDelegate to track state
+            // Use slight delay to ensure AppDelegate has registered observers
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                NotificationCenter.default.post(name: NSNotification.Name("PHTVShowDockIcon"), object: nil, userInfo: ["visible": true])
+            }
             
             // Update window level based on user preference
             updateSettingsWindowLevel()
@@ -95,9 +98,9 @@ struct SettingsWindowContent: View {
         .onDisappear {
             // Restore dock icon to user preference when settings closes
             let userPrefersDock = appState.showIconOnDock
-            NSLog("[SettingsWindowContent] onDisappear - posting HideDockIcon notification, userPrefers: %@", userPrefersDock ? "true" : "false")
+            NSLog("[SettingsWindowContent] onDisappear - restoring dock icon, userPrefers: %@", userPrefersDock ? "true" : "false")
             
-            // Use notification to communicate with ObjC AppDelegate
+            // Post notification for AppDelegate to restore state
             NotificationCenter.default.post(name: NSNotification.Name("PHTVShowDockIcon"), object: nil, userInfo: ["visible": userPrefersDock])
             
             // Also set activation policy directly as backup
