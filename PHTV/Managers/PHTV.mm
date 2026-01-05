@@ -637,29 +637,10 @@ extern "C" {
 
     // Apps that need to FORCE Unicode precomposed (not compound) - Using NSSet for O(1) lookup performance
     // These apps don't handle Unicode combining characters properly
-    // Note: WhatsApp removed - it needs precomposed but NOT Spotlight-style AX/per-char handling
+    // Note: Most apps are now auto-detected via search field detection (IsElementSpotlight)
+    // Only apps that ALWAYS need precomposed (not just in search fields) should be listed here
     NSSet* _forcePrecomposedAppSet = [NSSet setWithArray:@[@"com.apple.Spotlight",
                                                             @"com.apple.systemuiserver",  // Spotlight runs under SystemUIServer
-                                                            @"com.apple.systempreferences",  // System Settings - search bar needs special handling
-                                                            @"com.apple.finder",  // Finder - search bar needs special handling
-                                                            @"com.apple.mobilephone",  // FaceTime/Phone
-                                                            @"com.apple.AddressBook",  // Contacts
-                                                            @"com.apple.VoiceMemos",  // Voice Memos
-                                                            @"com.apple.iCal",  // Calendar
-                                                            @"com.apple.configurator.ui",  // Apple Configurator
-                                                            @"com.apple.mail",  // Mail
-                                                            @"com.apple.Music",  // Music
-                                                            @"com.apple.weather",  // Weather
-                                                            @"com.apple.podcasts",  // Podcasts
-                                                            @"com.apple.Passwords",  // Passwords
-                                                            @"com.apple.iBooksX",  // Books
-                                                            @"com.apple.reminders",  // Reminders
-                                                            @"com.apple.journal",  // Journal
-                                                            @"com.apple.games",  // Game Center
-                                                            @"com.apple.TextEdit",  // TextEdit
-                                                            @"com.apple.Safari",  // Safari
-                                                            @"com.apple.ScriptEditor2",  // Script Editor
-                                                            @"com.apple.Notes",  // Notes
                                                             PHTV_BUNDLE]];  // PHTV itself - SwiftUI TextField needs HID tap posting
 
     // Apps that need precomposed Unicode but should use normal batched sending (not AX API)
@@ -1852,11 +1833,12 @@ extern "C" {
     void handleMacro() {
         // PERFORMANCE: Use cached bundle ID instead of querying AX API
         NSString *effectiveTarget = _phtvEffectiveTargetBundleId ?: getFocusedAppBundleId();
-        BOOL isSpotlightLike = isSpotlightLikeApp(effectiveTarget);
+        // Use _phtvPostToHIDTap which includes spotlightActive (search field detected via AX)
+        BOOL isSpotlightLike = _phtvPostToHIDTap || isSpotlightLikeApp(effectiveTarget);
 
         #ifdef DEBUG
-        NSLog(@"[Macro] handleMacro: target='%@', isSpotlight=%d, backspaceCount=%d, macroSize=%zu",
-              effectiveTarget, isSpotlightLike, (int)pData->backspaceCount, pData->macroData.size());
+        NSLog(@"[Macro] handleMacro: target='%@', isSpotlight=%d (postToHID=%d), backspaceCount=%d, macroSize=%zu",
+              effectiveTarget, isSpotlightLike, _phtvPostToHIDTap, (int)pData->backspaceCount, pData->macroData.size());
         #endif
 
         // CRITICAL FIX: Spotlight requires AX API for macro replacement
@@ -2599,7 +2581,8 @@ extern "C" {
                 #endif
 
                 // Check if this is a special app (Spotlight-like or WhatsApp-like)
-                BOOL isSpecialApp = appChars.isSpotlightLike || appChars.needsPrecomposedBatched;
+                // Also treat as special when spotlightActive (search field detected via AX API)
+                BOOL isSpecialApp = spotlightActive || appChars.isSpotlightLike || appChars.needsPrecomposedBatched;
 
                 //fix autocomplete
                 // CRITICAL FIX: NEVER send empty character for SPACE key!
@@ -2742,7 +2725,8 @@ extern "C" {
 
                 //send backspace
                 if (!skipProcessing && pData->backspaceCount > 0 && pData->backspaceCount < MAX_BUFF) {
-                    if (appChars.isSpotlightLike) {
+                    // Use Spotlight-style deferred backspace when in search field (spotlightActive) or Spotlight-like app
+                    if (spotlightActive || appChars.isSpotlightLike) {
                         // Defer deletion to AX replacement inside SendNewCharString().
                         _phtvPendingBackspaceCount = (int)pData->backspaceCount;
 #ifdef DEBUG
