@@ -388,16 +388,11 @@ def build_vietnamese_dictionary(resources_dir, english_words=None):
         for telex in variants:
             if telex and 2 <= len(telex) <= 30:
                 if all(c.isalpha() and c.isascii() for c in telex):
-                    # Only exclude patterns >= 4 chars that match English words
-                    # Short patterns (2-3 chars) like "own" (ơn) are common Vietnamese syllables
-                    if english_words and len(telex) >= 4 and telex in english_words:
-                        excluded_count += 1
-                        continue
+                    # Don't exclude any Vietnamese patterns - let runtime logic handle priority
+                    # Vietnamese patterns like "been" (bên), "beer" (bể) are valid and common
                     telex_words.add(telex)
 
     print(f"  Generated {len(telex_words):,} unique Telex patterns (with variants)")
-    if excluded_count > 0:
-        print(f"  Excluded {excluded_count} patterns matching English words")
 
     for word in sorted(telex_words):
         trie.insert(word)
