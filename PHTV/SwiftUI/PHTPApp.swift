@@ -1252,7 +1252,6 @@ final class AppState: ObservableObject {
         }.store(in: &cancellables)
 
         Publishers.MergeMany([
-            $fixChromiumBrowser.map { _ in () }.eraseToAnyPublisher(),
             $performLayoutCompat.map { _ in () }.eraseToAnyPublisher(),
             $safeMode.map { _ in () }.eraseToAnyPublisher()
         ])
@@ -1405,7 +1404,6 @@ final class AppState: ObservableObject {
         typingStatsEnabled = false
 
         runOnStartup = false
-        fixChromiumBrowser = false
         performLayoutCompat = false
         showIconOnDock = false
         safeMode = false
