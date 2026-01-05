@@ -267,8 +267,9 @@ BOOL isSpotlightActive(void) {
 
     uint64_t elapsed_ms = mach_time_to_ms(now - lastCheck);
 
-    // Return cached result if recent enough
-    if (elapsed_ms < SPOTLIGHT_CACHE_DURATION_MS && lastCheck > 0) {
+    // Only use cache if result was TRUE (search field/Spotlight detected)
+    // Always re-check when cached result is FALSE to detect when user focuses on search field
+    if (elapsed_ms < SPOTLIGHT_CACHE_DURATION_MS && lastCheck > 0 && cachedResult) {
         return cachedResult;
     }
 
