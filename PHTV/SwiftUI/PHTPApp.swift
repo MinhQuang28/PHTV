@@ -5823,8 +5823,24 @@ struct EmojiPickerView: View {
     var onEmojiSelected: (String) -> Void
     var onClose: (() -> Void)?
 
-    @State private var selectedCategory = -2  // Default to "All" tab
+    // Remember last selected tab using UserDefaults
+    @State private var selectedCategory: Int
     @Namespace private var categoryNamespace
+    
+    private static let lastTabKey = "PHTVPickerLastTab"
+    
+    init(onEmojiSelected: @escaping (String) -> Void, onClose: (() -> Void)? = nil) {
+        self.onEmojiSelected = onEmojiSelected
+        self.onClose = onClose
+        // Load last selected tab, default to -2 ("Tất cả") if not set
+        let savedTab = UserDefaults.standard.integer(forKey: EmojiPickerView.lastTabKey)
+        // Validate saved tab is valid (-2, -3, -4, -5)
+        if [-2, -3, -4, -5].contains(savedTab) {
+            _selectedCategory = State(initialValue: savedTab)
+        } else {
+            _selectedCategory = State(initialValue: -2)
+        }
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -5884,11 +5900,9 @@ struct EmojiPickerView: View {
                         }
                         .id(-2)
                         .onAppear {
-                            // Scroll to selected category when view appears
+                            // Scroll to saved/selected category when view appears
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                if selectedCategory == -2 {
-                                    scrollProxy.scrollTo(-2, anchor: .leading)
-                                }
+                                scrollProxy.scrollTo(selectedCategory, anchor: .center)
                             }
                         }
 
@@ -5959,6 +5973,10 @@ struct EmojiPickerView: View {
             }
         }
         .frame(width: 380)
+        .onChange(of: selectedCategory) { _, newValue in
+            // Save selected tab to UserDefaults
+            UserDefaults.standard.set(newValue, forKey: EmojiPickerView.lastTabKey)
+        }
         .background {
             if #available(macOS 26.0, *) {
                 // Liquid Glass design for macOS 26+ (regular for better visibility)
