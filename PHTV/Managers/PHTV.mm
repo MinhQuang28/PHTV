@@ -182,12 +182,22 @@ static inline void TrackExternalDelete(void) {
     _externalDeleteDetected = YES;
 }
 
-// Check if element is a search field by examining its role and subrole
+// Helper to check if string contains search-related keywords (case insensitive)
+static inline BOOL ContainsSearchKeyword(NSString *str) {
+    if (str == nil) return NO;
+    NSString *lower = [str lowercaseString];
+    return [lower containsString:@"search"] ||
+           [lower containsString:@"tìm kiếm"] ||
+           [lower containsString:@"tìm"] ||
+           [lower containsString:@"filter"] ||
+           [lower containsString:@"lọc"];
+}
+
+// Check if element is a search field by examining its role, subrole, and other attributes
 static inline BOOL IsElementSpotlight(AXUIElementRef element) {
     if (element == NULL) return NO;
 
     CFTypeRef role = NULL;
-    CFTypeRef subrole = NULL;
     BOOL isSearchField = NO;
 
     // Check role
@@ -199,22 +209,54 @@ static inline BOOL IsElementSpotlight(AXUIElementRef element) {
             if ([roleStr isEqualToString:@"AXSearchField"]) {
                 isSearchField = YES;
             }
-            // AXTextField → check subrole for "Search" (some apps use TextField with Search subrole)
-            else if ([roleStr isEqualToString:@"AXTextField"]) {
-                if (AXUIElementCopyAttributeValue(element, kAXSubroleAttribute, &subrole) == kAXErrorSuccess) {
-                    if (subrole != NULL && CFGetTypeID(subrole) == CFStringGetTypeID()) {
-                        NSString *subroleStr = (__bridge NSString *)subrole;
-                        if ([subroleStr containsString:@"Search"]) {
+            // AXTextField or AXTextArea → check additional attributes
+            else if ([roleStr isEqualToString:@"AXTextField"] || [roleStr isEqualToString:@"AXTextArea"]) {
+                CFTypeRef attr = NULL;
+
+                // Check subrole
+                if (!isSearchField && AXUIElementCopyAttributeValue(element, kAXSubroleAttribute, &attr) == kAXErrorSuccess) {
+                    if (attr != NULL && CFGetTypeID(attr) == CFStringGetTypeID()) {
+                        if (ContainsSearchKeyword((__bridge NSString *)attr)) {
                             isSearchField = YES;
                         }
                     }
+                    if (attr) { CFRelease(attr); attr = NULL; }
+                }
+
+                // Check AXIdentifier
+                if (!isSearchField && AXUIElementCopyAttributeValue(element, kAXIdentifierAttribute, &attr) == kAXErrorSuccess) {
+                    if (attr != NULL && CFGetTypeID(attr) == CFStringGetTypeID()) {
+                        if (ContainsSearchKeyword((__bridge NSString *)attr)) {
+                            isSearchField = YES;
+                        }
+                    }
+                    if (attr) { CFRelease(attr); attr = NULL; }
+                }
+
+                // Check AXDescription
+                if (!isSearchField && AXUIElementCopyAttributeValue(element, kAXDescriptionAttribute, &attr) == kAXErrorSuccess) {
+                    if (attr != NULL && CFGetTypeID(attr) == CFStringGetTypeID()) {
+                        if (ContainsSearchKeyword((__bridge NSString *)attr)) {
+                            isSearchField = YES;
+                        }
+                    }
+                    if (attr) { CFRelease(attr); attr = NULL; }
+                }
+
+                // Check AXPlaceholderValue (placeholder text like "Search..." or "Tìm kiếm...")
+                if (!isSearchField && AXUIElementCopyAttributeValue(element, kAXPlaceholderValueAttribute, &attr) == kAXErrorSuccess) {
+                    if (attr != NULL && CFGetTypeID(attr) == CFStringGetTypeID()) {
+                        if (ContainsSearchKeyword((__bridge NSString *)attr)) {
+                            isSearchField = YES;
+                        }
+                    }
+                    if (attr) { CFRelease(attr); attr = NULL; }
                 }
             }
             CFRelease(role);
         }
     }
 
-    if (subrole != NULL) CFRelease(subrole);
     return isSearchField;
 }
 
