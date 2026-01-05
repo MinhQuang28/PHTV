@@ -2579,9 +2579,14 @@ extern "C" {
                 }
                 #endif
 
+                // CHROMIUM FIX: Chromium apps don't support AX API properly
+                // When spotlightActive=true on Chromium, we should NOT use Spotlight-style handling
+                BOOL isChromiumApp = [_unicodeCompoundAppSet containsObject:effectiveBundleId];
+                
                 // Check if this is a special app (Spotlight-like or WhatsApp-like)
                 // Also treat as special when spotlightActive (search field detected via AX API)
-                BOOL isSpecialApp = spotlightActive || appChars.isSpotlightLike || appChars.needsPrecomposedBatched;
+                // EXCEPT for Chromium apps - they don't support AX API, so ignore spotlightActive for them
+                BOOL isSpecialApp = (!isChromiumApp && spotlightActive) || appChars.isSpotlightLike || appChars.needsPrecomposedBatched;
 
                 //fix autocomplete
                 // CRITICAL FIX: NEVER send empty character for SPACE key!
@@ -2725,7 +2730,8 @@ extern "C" {
                 //send backspace
                 if (!skipProcessing && pData->backspaceCount > 0 && pData->backspaceCount < MAX_BUFF) {
                     // Use Spotlight-style deferred backspace when in search field (spotlightActive) or Spotlight-like app
-                    if (spotlightActive || appChars.isSpotlightLike) {
+                    // EXCEPT for Chromium apps - they don't support AX API properly
+                    if ((!isChromiumApp && spotlightActive) || appChars.isSpotlightLike) {
                         // Defer deletion to AX replacement inside SendNewCharString().
                         _phtvPendingBackspaceCount = (int)pData->backspaceCount;
 #ifdef DEBUG
@@ -2746,7 +2752,8 @@ extern "C" {
                 if (!skipProcessing) {
                     // For Spotlight-like targets we rely on SendNewCharString(), which can
                     // perform deterministic replacement (AX) and/or per-character Unicode posting.
-                    BOOL isSpotlightTarget = spotlightActive || appChars.isSpotlightLike;
+                    // EXCEPT for Chromium apps - they don't support AX API properly
+                    BOOL isSpotlightTarget = (!isChromiumApp && spotlightActive) || appChars.isSpotlightLike;
                     BOOL useStepByStep = (!isSpotlightTarget) && (vSendKeyStepByStep || appChars.needsStepByStep);
 #ifdef DEBUG
                     if (isSpotlightTarget) {
