@@ -5973,7 +5973,7 @@ struct EmojiPickerView: View {
             }
         }
         .frame(width: 380)
-        .onChange(of: selectedCategory) { _, newValue in
+        .onChange(of: selectedCategory) { newValue in
             // Save selected tab to UserDefaults
             UserDefaults.standard.set(newValue, forKey: EmojiPickerView.lastTabKey)
         }
