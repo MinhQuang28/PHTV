@@ -80,17 +80,14 @@ struct SettingsWindowContent: View {
         .onAppear {
             // Show dock icon when settings window opens
             // This prevents the window from being hidden when app loses focus
-            NSLog("[SettingsWindowContent] onAppear - attempting to show dock icon")
+            NSLog("[SettingsWindowContent] onAppear - posting ShowDockIcon notification")
             
-            if let appDelegate = NSApp.delegate as? AppDelegate {
-                NSLog("[SettingsWindowContent] AppDelegate cast successful, calling setDockIconVisible(true)")
-                appDelegate.setDockIconVisible(true)
-            } else {
-                NSLog("[SettingsWindowContent] ERROR: Failed to cast NSApp.delegate to AppDelegate")
-                // Fallback: try using activation policy directly
-                NSApp.setActivationPolicy(.regular)
-                NSApp.activate(ignoringOtherApps: true)
-            }
+            // Use notification to communicate with ObjC AppDelegate
+            NotificationCenter.default.post(name: NSNotification.Name("PHTVShowDockIcon"), object: nil, userInfo: ["visible": true])
+            
+            // Also set activation policy directly as backup
+            NSApp.setActivationPolicy(.regular)
+            NSApp.activate(ignoringOtherApps: true)
             
             // Update window level based on user preference
             updateSettingsWindowLevel()
@@ -98,15 +95,14 @@ struct SettingsWindowContent: View {
         .onDisappear {
             // Restore dock icon to user preference when settings closes
             let userPrefersDock = appState.showIconOnDock
-            NSLog("[SettingsWindowContent] onDisappear - restoring dock icon to: %@", userPrefersDock ? "true" : "false")
+            NSLog("[SettingsWindowContent] onDisappear - posting HideDockIcon notification, userPrefers: %@", userPrefersDock ? "true" : "false")
             
-            if let appDelegate = NSApp.delegate as? AppDelegate {
-                appDelegate.setDockIconVisible(userPrefersDock)
-            } else {
-                // Fallback
-                let policy: NSApplication.ActivationPolicy = userPrefersDock ? .regular : .accessory
-                NSApp.setActivationPolicy(policy)
-            }
+            // Use notification to communicate with ObjC AppDelegate
+            NotificationCenter.default.post(name: NSNotification.Name("PHTVShowDockIcon"), object: nil, userInfo: ["visible": userPrefersDock])
+            
+            // Also set activation policy directly as backup
+            let policy: NSApplication.ActivationPolicy = userPrefersDock ? .regular : .accessory
+            NSApp.setActivationPolicy(policy)
         }
         .onChange(of: appState.settingsWindowAlwaysOnTop) { _ in
             // Update window level when user toggles the setting

@@ -859,6 +859,12 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
                                                  name:@"PHTVSettingsChanged"
                                                object:nil];
     
+    // Listen for dock icon visibility changes from SwiftUI
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(handleShowDockIconNotification:)
+                                                 name:@"PHTVShowDockIcon"
+                                               object:nil];
+    
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(handleHotkeyChanged:)
                                                  name:@"HotkeyChanged"
@@ -1086,6 +1092,29 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
         NSLog(@"[SwiftUI] Hotkey changed to: 0x%X (beep=%@)", vSwitchKeyStatus, hasBeep ? @"YES" : @"NO");
         #endif
     }
+}
+
+// Handle dock icon visibility notification from SwiftUI
+- (void)handleShowDockIconNotification:(NSNotification *)notification {
+    BOOL visible = [[notification.userInfo objectForKey:@"visible"] boolValue];
+    NSLog(@"[AppDelegate] handleShowDockIconNotification: visible=%d", visible);
+    
+    // Track settings window state
+    settingsWindowOpen = visible;
+    
+    dispatch_async(dispatch_get_main_queue(), ^{
+        if (visible) {
+            [NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
+            [NSApp activateIgnoringOtherApps:YES];
+            NSLog(@"[AppDelegate] Dock icon shown (settings window open)");
+        } else {
+            // Restore to user preference
+            BOOL userPrefersDock = [[NSUserDefaults standardUserDefaults] boolForKey:@"vShowIconOnDock"];
+            NSApplicationActivationPolicy policy = userPrefersDock ? NSApplicationActivationPolicyRegular : NSApplicationActivationPolicyAccessory;
+            [NSApp setActivationPolicy:policy];
+            NSLog(@"[AppDelegate] Dock icon restored to user preference: %d", userPrefersDock);
+        }
+    });
 }
 
 - (void)handleSettingsChanged:(NSNotification *)notification {
