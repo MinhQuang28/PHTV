@@ -1805,7 +1805,7 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
 }
 
 -(void)setDockIconVisible:(BOOL)visible {
-    NSLog(@\"[AppDelegate] setDockIconVisible called with: %d\", visible);
+    NSLog(@"[AppDelegate] setDockIconVisible called with: %d", visible);
     
     // Track whether settings window is open (don't modify vShowIconOnDock - that's user preference)
     settingsWindowOpen = visible;
