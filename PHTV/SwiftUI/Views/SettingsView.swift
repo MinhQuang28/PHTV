@@ -88,22 +88,24 @@ struct SettingsView: View {
             // When settings window opens, ALWAYS show dock icon temporarily
             // This prevents the window from being hidden when app loses focus
             // (accessory apps hide all windows when deactivated)
+            // Use showIconOnDock: which doesn't save to UserDefaults
             let appDelegate = NSApp.delegate as? AppDelegate
             NSLog("[SettingsView] onAppear - temporarily showing dock icon to keep window visible")
-            appDelegate?.showIcon(onDock: true)
+            appDelegate?.showIconOnDock(true)
         }
         .onDisappear {
             // When settings window closes, restore dock icon to user preference
+            // Use showIconOnDock: which doesn't save to UserDefaults
             let appDelegate = NSApp.delegate as? AppDelegate
             let userPrefersDock = appState.showIconOnDock
             NSLog("[SettingsView] onDisappear - restoring dock icon to user preference: %@", userPrefersDock ? "true" : "false")
-            appDelegate?.showIcon(onDock: userPrefersDock)
+            appDelegate?.showIconOnDock(userPrefersDock)
         }
         .onChange(of: appState.showIconOnDock) { newValue in
-            // When dock icon toggle is changed, update immediately
+            // When dock icon toggle is changed, update immediately and save
             let appDelegate = NSApp.delegate as? AppDelegate
             NSLog("[SettingsView] onChange - showIconOnDock changed to %@", newValue ? "true" : "false")
-            appDelegate?.showIcon(onDock: newValue)
+            appDelegate?.showIcon(newValue)  // This one saves to UserDefaults
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ShowAboutTab"))) { _ in
             selectedTab = .about

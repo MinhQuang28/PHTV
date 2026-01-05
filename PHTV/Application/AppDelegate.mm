@@ -1808,7 +1808,8 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
         if (val) {
             // Show icon on dock (regular app)
             [NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
-            [NSApp activate];
+            // Activate app and bring windows to front
+            [NSApp activateIgnoringOtherApps:YES];
         } else {
             // Hide from dock (accessory app - stay in menu bar only)
             [NSApp setActivationPolicy:NSApplicationActivationPolicyAccessory];
@@ -1831,7 +1832,7 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
         
         // If showing dock icon, activate the app to refresh the dock
         if (onDock) {
-            [NSApp activate];
+            [NSApp activateIgnoringOtherApps:YES];
         }
     });
 }
