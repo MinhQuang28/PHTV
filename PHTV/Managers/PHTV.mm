@@ -947,6 +947,9 @@ extern "C" {
             // Spotlight/SystemUIServer is sensitive to coalescing.
             CGEventFlags flags = CGEventGetFlags(down);
             flags |= kCGEventFlagMaskNonCoalesced;
+            // CRITICAL FIX: Clear Fn/Globe flag to prevent triggering system hotkeys
+            // (e.g., Fn+E opens Character Viewer/Emoji picker on macOS)
+            flags &= ~kCGEventFlagMaskSecondaryFn;
             CGEventSetFlags(down, flags);
             CGEventSetFlags(up, flags);
         }
@@ -1397,6 +1400,11 @@ extern "C" {
             }
             _privateFlag |= kCGEventFlagMaskNonCoalesced;
             
+            // CRITICAL FIX: Clear Fn/Globe flag to prevent triggering system hotkeys
+            // (e.g., Fn+E opens Character Viewer/Emoji picker on macOS)
+            // This prevents the bug where typing 'eee' triggers the emoji picker
+            _privateFlag &= ~kCGEventFlagMaskSecondaryFn;
+            
             CGEventSetFlags(_newEventDown, _privateFlag);
             CGEventSetFlags(_newEventUp, _privateFlag);
             ApplyKeyboardTypeAndFlags(_newEventDown, _newEventUp);
@@ -1506,6 +1514,8 @@ extern "C" {
             }
             CGEventFlags bsFlags = CGEventGetFlags(bsDown);
             bsFlags |= kCGEventFlagMaskNonCoalesced;
+            // Clear Fn/Globe flag to prevent triggering system hotkeys
+            bsFlags &= ~kCGEventFlagMaskSecondaryFn;
             CGEventSetFlags(bsDown, bsFlags);
             CGEventSetFlags(bsUp, bsFlags);
             PostSyntheticEvent(_proxy, bsDown);
@@ -1531,6 +1541,8 @@ extern "C" {
                         }
                         CGEventFlags bsFlags2 = CGEventGetFlags(bsDown2);
                         bsFlags2 |= kCGEventFlagMaskNonCoalesced;
+                        // Clear Fn/Globe flag to prevent triggering system hotkeys
+                        bsFlags2 &= ~kCGEventFlagMaskSecondaryFn;
                         CGEventSetFlags(bsDown2, bsFlags2);
                         CGEventSetFlags(bsUp2, bsFlags2);
                         PostSyntheticEvent(_proxy, bsDown2);
@@ -1778,6 +1790,8 @@ extern "C" {
                 CGEventSetIntegerValueField(_newEventUp, kCGKeyboardEventKeyboardType, _phtvKeyboardType);
             }
             CGEventFlags uFlags = CGEventGetFlags(_newEventDown) | kCGEventFlagMaskNonCoalesced;
+            // Clear Fn/Globe flag to prevent triggering system hotkeys
+            uFlags &= ~kCGEventFlagMaskSecondaryFn;
             CGEventSetFlags(_newEventDown, uFlags);
             CGEventSetFlags(_newEventUp, uFlags);
             CGEventKeyboardSetUnicodeString(_newEventDown, _finalCharSize, _finalCharString);
