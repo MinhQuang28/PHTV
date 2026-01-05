@@ -114,15 +114,24 @@ open /Applications/PHTV.app
 
 ### Menu Bar
 
+<img src="PHTV/Resources/UI/menubar_ui.png" alt="Menu Bar UI" width="100%">
+<p align="center"><em>Menu Bar PHTV</em></p>
+
+### PHTV Picker
+
 <table>
 <tr>
-<td width="50%">
-<img src="PHTV/Resources/UI/menu-input-methods.png" alt="Các kiểu gõ trên menu bar" width="100%">
-<p align="center"><em>Các kiểu gõ trên menu bar</em></p>
+<td width="33%">
+<img src="PHTV/Resources/UI/PHTV_Picker_1_Emoji.png" alt="PHTV Picker - Emoji" width="100%">
+<p align="center"><em>Emoji Picker</em></p>
 </td>
-<td width="50%">
-<img src="PHTV/Resources/UI/menu-charset.png" alt="Các bảng mã trên menu bar" width="100%">
-<p align="center"><em>Các bảng mã trên menu bar</em></p>
+<td width="33%">
+<img src="PHTV/Resources/UI/PHTV_Picker_2_GIF.png" alt="PHTV Picker - GIF" width="100%">
+<p align="center"><em>GIF Picker</em></p>
+</td>
+<td width="33%">
+<img src="PHTV/Resources/UI/PHTV_Picker_3_Sticker.png" alt="PHTV Picker - Sticker" width="100%">
+<p align="center"><em>Sticker Picker</em></p>
 </td>
 </tr>
 </table>
@@ -132,17 +141,39 @@ open /Applications/PHTV.app
 <table>
 <tr>
 <td width="33%">
-<img src="PHTV/Resources/UI/settings-typing.png" alt="Settings - Typing" width="100%">
-<p align="center"><em>Typing Settings</em></p>
+<img src="PHTV/Resources/UI/Setting_1_bogo.png" alt="Settings - Bộ gõ" width="100%">
+<p align="center"><em>Bộ gõ</em></p>
 </td>
 <td width="33%">
-<img src="PHTV/Resources/UI/settings-macros.png" alt="Settings - Macros" width="100%">
-<p align="center"><em>Macros Settings</em></p>
+<img src="PHTV/Resources/UI/Setting_2_phimtat.png" alt="Settings - Phím tắt" width="100%">
+<p align="center"><em>Phím tắt</em></p>
 </td>
 <td width="33%">
-<img src="PHTV/Resources/UI/settings-system.png" alt="Settings - System" width="100%">
-<p align="center"><em>System Settings</em></p>
+<img src="PHTV/Resources/UI/Setting_3_gotat.png" alt="Settings - Gõ tắt" width="100%">
+<p align="center"><em>Gõ tắt</em></p>
 </td>
+</tr>
+<tr>
+<td width="33%">
+<img src="PHTV/Resources/UI/Setting_4_ungdung.png" alt="Settings - Ứng dụng" width="100%">
+<p align="center"><em>Ứng dụng</em></p>
+</td>
+<td width="33%">
+<img src="PHTV/Resources/UI/Setting_5_hethong.png" alt="Settings - Hệ thống" width="100%">
+<p align="center"><em>Hệ thống</em></p>
+</td>
+<td width="33%">
+<img src="PHTV/Resources/UI/Setting_6_baoloi.png" alt="Settings - Báo lỗi" width="100%">
+<p align="center"><em>Báo lỗi</em></p>
+</td>
+</tr>
+<tr>
+<td width="33%">
+<img src="PHTV/Resources/UI/Setting_7_thongtin.png" alt="Settings - Thông tin" width="100%">
+<p align="center"><em>Thông tin</em></p>
+</td>
+<td width="33%"></td>
+<td width="33%"></td>
 </tr>
 </table>
 
