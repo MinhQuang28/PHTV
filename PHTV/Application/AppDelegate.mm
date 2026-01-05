@@ -2143,7 +2143,7 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
 
 -(void) onControlPanelSelected {
     // Show dock icon when opening settings
-    [self showIconOnDock:YES];
+    [self setDockIconVisible:YES];
 
     // Mark that user has opened settings, so defaults won't overwrite their changes
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
