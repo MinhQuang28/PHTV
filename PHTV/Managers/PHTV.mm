@@ -2580,6 +2580,17 @@ extern "C" {
                 }
                 #endif
 
+                // CHROMIUM AUTO ENGLISH FIX: Disable HID tap posting for Auto English restore on Chromium
+                // Chromium apps don't work well with kCGHIDEventTap posting, causing duplicate characters
+                BOOL isAutoEnglishRestoreChromium = (pData->extCode == 5) && [_unicodeCompoundAppSet containsObject:effectiveBundleId];
+                BOOL savedPostToHIDTap = _phtvPostToHIDTap;
+                if (isAutoEnglishRestoreChromium) {
+                    _phtvPostToHIDTap = NO;
+#ifdef DEBUG
+                    NSLog(@"[AutoEnglish] Chromium detected, disabling HID tap posting for this restore");
+#endif
+                }
+
                 // Check if this is a special app (Spotlight-like or WhatsApp-like)
                 // Also treat as special when spotlightActive (search field detected via AX API)
                 BOOL isSpecialApp = spotlightActive || appChars.isSpotlightLike || appChars.needsPrecomposedBatched;
@@ -2796,6 +2807,11 @@ extern "C" {
                             [[NSNotificationCenter defaultCenter] postNotificationName:@"TypingStatsWord" object:@(vLanguage == 1)];
                         }
                     }
+                }
+
+                // Restore _phtvPostToHIDTap after processing (for Chromium Auto English fix)
+                if (isAutoEnglishRestoreChromium) {
+                    _phtvPostToHIDTap = savedPostToHIDTap;
                 }
             } else if (pData->code == vReplaceMaro) { //MACRO
                 handleMacro();
