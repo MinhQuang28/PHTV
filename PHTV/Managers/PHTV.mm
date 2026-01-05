@@ -635,6 +635,21 @@ extern "C" {
                                                            @"com.vivaldi.Vivaldi",  // Vivaldi
                                                            @"com.operasoftware.Opera"]];  // Opera
 
+    // Chromium-based browsers only (excludes Apple apps)
+    // These apps don't support AX API for text replacement, so we shouldn't use Spotlight-style handling
+    NSSet* _chromiumBrowserAppSet = [NSSet setWithArray:@[@"com.google.Chrome",
+                                                           @"com.brave.Browser",
+                                                           @"com.microsoft.edgemac",  // Edge Stable
+                                                           @"com.microsoft.edgemac.Dev",
+                                                           @"com.microsoft.edgemac.Beta",
+                                                           @"com.microsoft.Edge",  // Edge Stable (alternate)
+                                                           @"com.microsoft.Edge.Dev",
+                                                           @"com.thebrowser.Browser",  // Arc Browser
+                                                           @"company.thebrowser.dia",  // Dia Browser
+                                                           @"org.chromium.Chromium",  // Chromium
+                                                           @"com.vivaldi.Vivaldi",  // Vivaldi
+                                                           @"com.operasoftware.Opera"]];  // Opera
+
     // Apps that need to FORCE Unicode precomposed (not compound) - Using NSSet for O(1) lookup performance
     // These apps don't handle Unicode combining characters properly
     // Note: Most apps are now auto-detected via search field detection (IsElementSpotlight)
@@ -2581,7 +2596,8 @@ extern "C" {
 
                 // CHROMIUM FIX: Chromium apps don't support AX API properly
                 // When spotlightActive=true on Chromium, we should NOT use Spotlight-style handling
-                BOOL isChromiumApp = [_unicodeCompoundAppSet containsObject:effectiveBundleId];
+                // Use _chromiumBrowserAppSet which contains only Chromium browsers (not Apple apps)
+                BOOL isChromiumApp = [_chromiumBrowserAppSet containsObject:effectiveBundleId];
                 
                 // Check if this is a special app (Spotlight-like or WhatsApp-like)
                 // Also treat as special when spotlightActive (search field detected via AX API)
