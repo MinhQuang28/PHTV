@@ -84,23 +84,6 @@ struct SettingsView: View {
                 .frame(minWidth: 400, minHeight: 400)
         }
         .navigationSplitViewStyle(.balanced)
-        .onAppear {
-            // When settings window opens, ALWAYS show dock icon temporarily
-            // This prevents the window from being hidden when app loses focus
-            // (accessory apps hide all windows when deactivated)
-            // Use showIconOnDock: which doesn't save to UserDefaults
-            let appDelegate = NSApp.delegate as? AppDelegate
-            NSLog("[SettingsView] onAppear - temporarily showing dock icon to keep window visible")
-            appDelegate?.setDockIconVisible(true)
-        }
-        .onDisappear {
-            // When settings window closes, restore dock icon to user preference
-            // Use showIconOnDock: which doesn't save to UserDefaults
-            let appDelegate = NSApp.delegate as? AppDelegate
-            let userPrefersDock = appState.showIconOnDock
-            NSLog("[SettingsView] onDisappear - restoring dock icon to user preference: %@", userPrefersDock ? "true" : "false")
-            appDelegate?.setDockIconVisible(userPrefersDock)
-        }
         .onChange(of: appState.showIconOnDock) { newValue in
             // When dock icon toggle is changed, update immediately and save
             let appDelegate = NSApp.delegate as? AppDelegate

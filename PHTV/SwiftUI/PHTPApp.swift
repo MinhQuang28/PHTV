@@ -78,8 +78,21 @@ struct SettingsWindowContent: View {
                 .zIndex(1000)
         }
         .onAppear {
+            // Show dock icon when settings window opens
+            // This prevents the window from being hidden when app loses focus
+            let appDelegate = NSApp.delegate as? AppDelegate
+            NSLog("[SettingsWindowContent] onAppear - showing dock icon")
+            appDelegate?.setDockIconVisible(true)
+            
             // Update window level based on user preference
             updateSettingsWindowLevel()
+        }
+        .onDisappear {
+            // Restore dock icon to user preference when settings closes
+            let appDelegate = NSApp.delegate as? AppDelegate
+            let userPrefersDock = appState.showIconOnDock
+            NSLog("[SettingsWindowContent] onDisappear - restoring dock icon to: %@", userPrefersDock ? "true" : "false")
+            appDelegate?.setDockIconVisible(userPrefersDock)
         }
         .onChange(of: appState.settingsWindowAlwaysOnTop) { _ in
             // Update window level when user toggles the setting
