@@ -2491,7 +2491,12 @@ extern "C" {
 
             // Cache for send routines called later in this callback.
             _phtvEffectiveTargetBundleId = effectiveBundleId;
-            _phtvPostToHIDTap = spotlightActive || appChars.isSpotlightLike;
+            
+            // CHROMIUM FIX: Chromium apps don't support HID tap posting or AX API
+            // When spotlightActive=true on Chromium, we should NOT use Spotlight-style handling
+            BOOL isChromiumBrowser = [_chromiumBrowserAppSet containsObject:effectiveBundleId];
+            _phtvPostToHIDTap = (!isChromiumBrowser && spotlightActive) || appChars.isSpotlightLike;
+            
             _phtvKeyboardType = CGEventGetIntegerValueField(event, kCGKeyboardEventKeyboardType);
             _phtvPendingBackspaceCount = 0;
 
