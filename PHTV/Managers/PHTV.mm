@@ -1811,8 +1811,7 @@ extern "C" {
     void handleMacro() {
         // PERFORMANCE: Use cached bundle ID instead of querying AX API
         NSString *effectiveTarget = _phtvEffectiveTargetBundleId ?: getFocusedAppBundleId();
-        BOOL isSpotlightLike = [effectiveTarget hasPrefix:@"com.apple.Spotlight"] ||
-                               [effectiveTarget isEqualToString:@"com.apple.systemuiserver"];
+        BOOL isSpotlightLike = isSpotlightLikeApp(effectiveTarget);
 
         #ifdef DEBUG
         NSLog(@"[Macro] handleMacro: target='%@', isSpotlight=%d, backspaceCount=%d, macroSize=%zu",
