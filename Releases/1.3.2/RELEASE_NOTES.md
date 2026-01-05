@@ -23,15 +23,6 @@ Thêm từ tiếng Anh hoặc tiếng Việt vào từ điển để:
 Sao lưu và khôi phục toàn bộ cài đặt:
 - Xuất ra file `.phtv-backup`
 - Bao gồm: Settings, Macros, Categories, Dictionary, Excluded Apps
-- Tùy chọn bao gồm thống kê gõ phím
-
-### Thống kê gõ phím
-Theo dõi hoạt động gõ phím:
-- Tổng số ký tự và từ đã gõ
-- Thời gian gõ tích lũy
-- Biểu đồ 7 ngày gần đây
-- Phân bố ngôn ngữ (Việt/Anh)
-- Toggle bật/tắt tính năng
 
 ## Cải tiến giao diện
 

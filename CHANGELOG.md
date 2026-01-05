@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Enhanced Non-Latin Keyboard Detection**: Tự động chuyển về English khi dùng bàn phím non-Latin
+  - Hỗ trợ: Japanese, Chinese, Korean, Arabic, Hebrew, Thai, Hindi, Greek, Cyrillic, Georgian, Armenian, v.v.
+  - Tự động khôi phục Vietnamese khi chuyển lại bàn phím Latin
+  - Hiển thị tên bàn phím thực tế trong log
+
+### Removed
+- **Chromium Fix**: Xóa tính năng sửa lỗi Chromium (gây nhiều lỗi hơn là giải quyết)
+- **Typing Stats**: Xóa tính năng thống kê gõ phím
+
 ## [1.4.6] - 2026-01-04
 
 ### Changed
@@ -156,7 +166,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Counter tự động tăng
 - **Từ điển tùy chỉnh**: Thêm từ tiếng Anh/Việt để nhận diện chính xác hơn
 - **Import/Export cài đặt**: Sao lưu và khôi phục toàn bộ cài đặt ra file .phtv-backup
-- **Thống kê gõ phím**: Theo dõi số từ, ký tự, thời gian gõ với biểu đồ 7 ngày
 
 ### Changed
 - **Settings Reorganization**: Tổ chức lại từ 12 tabs xuống 11 tabs

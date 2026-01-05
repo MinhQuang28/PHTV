@@ -95,11 +95,10 @@ open /Applications/PHTV.app
 - **Khôi phục ký tự gốc** - Nhấn ESC để hoàn tác dấu (VD: "việt" → "viejet")
 - **Smart Switch** - Tự động nhớ ngôn ngữ cho từng ứng dụng
 
-### Thống kê gõ phím
-- **Đếm từ và ký tự** - Theo dõi số lượng đã gõ
-- **Thời gian gõ** - Tích lũy thời gian typing
-- **Biểu đồ 7 ngày** - Xem xu hướng hoạt động
-- **Phân bố ngôn ngữ** - Tỷ lệ Việt/Anh
+### Phát hiện bàn phím non-Latin
+- **Tự động chuyển về English** - Khi dùng bàn phím Nhật, Trung, Hàn, A Rập, Thái, Hindi...
+- **Khôi phục tự động** - Chuyển lại bàn phím Latin sẽ khôi phục chế độ tiếng Việt
+- **Hỗ trợ đa dạng** - Japanese, Chinese, Korean, Arabic, Hebrew, Thai, Greek, Cyrillic, v.v.
 
 ### Hệ thống
 - **Khởi động cùng macOS** - Tùy chọn chạy khi đăng nhập
@@ -239,7 +238,7 @@ Click biểu tượng **Vi** (Việt) / **En** (Anh) trên menu bar:
 | **Phím tắt** | Phím chuyển ngôn ngữ, tạm tắt tiếng Việt, PHTV Picker hotkey |
 | **Gõ tắt** | Quản lý macro, text snippets, import/export, tự động viết hoa |
 | **Ứng dụng** | Excluded Apps, Send Key Step-by-Step, Keyboard Layout, Claude Code Fix, Safe Mode |
-| **Hệ thống** | Khởi động cùng macOS, Smart Switch, cập nhật, menu bar, thống kê gõ phím |
+| **Hệ thống** | Khởi động cùng macOS, Smart Switch, cập nhật, menu bar, phát hiện bàn phím non-Latin |
 | **Báo lỗi** | Gửi báo cáo lỗi qua GitHub hoặc Email với crash logs và debug info |
 | **Thông tin** | Phiên bản, giấy phép, ủng hộ phát triển |
 

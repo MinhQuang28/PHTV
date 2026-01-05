@@ -186,9 +186,74 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
 }
 
 // Check if input source is Latin-based (can type Vietnamese)
+// Returns NO for non-Latin scripts: Japanese, Chinese, Korean, Arabic, Hebrew, Thai, Hindi, Greek, Cyrillic, etc.
 - (BOOL)isLatinInputSource:(TISInputSourceRef)inputSource {
     if (inputSource == NULL) return YES;  // Assume Latin if we can't determine
     
+    // First, check input source ID for common non-Latin input methods
+    CFStringRef sourceID = (CFStringRef)TISGetInputSourceProperty(inputSource, kTISPropertyInputSourceID);
+    if (sourceID != NULL) {
+        NSString *sourceIDStr = (__bridge NSString *)sourceID;
+        
+        // Known non-Latin input source patterns (fast path)
+        static NSArray *nonLatinPatterns = nil;
+        static dispatch_once_t patternToken;
+        dispatch_once(&patternToken, ^{
+            nonLatinPatterns = @[
+                // Japanese
+                @"com.apple.inputmethod.Kotoeri", @"com.apple.inputmethod.Japanese",
+                @"com.google.inputmethod.Japanese", @"jp.co.atok",
+                // Chinese
+                @"com.apple.inputmethod.SCIM", @"com.apple.inputmethod.TCIM",
+                @"com.apple.inputmethod.ChineseHandwriting",
+                @"com.sogou.inputmethod", @"com.baidu.inputmethod",
+                @"com.tencent.inputmethod", @"com.iflytek.inputmethod",
+                // Korean
+                @"com.apple.inputmethod.Korean", @"com.apple.inputmethod.KoreanIM",
+                // Arabic
+                @"com.apple.keylayout.Arabic", @"com.apple.keylayout.ArabicPC",
+                // Hebrew
+                @"com.apple.keylayout.Hebrew", @"com.apple.keylayout.HebrewQWERTY",
+                // Thai
+                @"com.apple.keylayout.Thai", @"com.apple.keylayout.ThaiPattachote",
+                // Hindi/Devanagari
+                @"com.apple.keylayout.Devanagari", @"com.apple.keylayout.Hindi",
+                @"com.apple.inputmethod.Hindi",
+                // Greek
+                @"com.apple.keylayout.Greek", @"com.apple.keylayout.GreekPolytonic",
+                // Cyrillic (Russian, Ukrainian, etc.)
+                @"com.apple.keylayout.Russian", @"com.apple.keylayout.RussianPC",
+                @"com.apple.keylayout.Ukrainian", @"com.apple.keylayout.Bulgarian",
+                @"com.apple.keylayout.Serbian", @"com.apple.keylayout.Macedonian",
+                // Georgian
+                @"com.apple.keylayout.Georgian",
+                // Armenian
+                @"com.apple.keylayout.Armenian",
+                // Tamil, Telugu, Kannada, Malayalam, etc.
+                @"com.apple.keylayout.Tamil", @"com.apple.keylayout.Telugu",
+                @"com.apple.keylayout.Kannada", @"com.apple.keylayout.Malayalam",
+                @"com.apple.keylayout.Gujarati", @"com.apple.keylayout.Punjabi",
+                @"com.apple.keylayout.Bengali", @"com.apple.keylayout.Oriya",
+                // Myanmar, Khmer, Lao
+                @"com.apple.keylayout.Myanmar", @"com.apple.keylayout.Khmer",
+                @"com.apple.keylayout.Lao",
+                // Tibetan, Nepali, Sinhala
+                @"com.apple.keylayout.Tibetan", @"com.apple.keylayout.Nepali",
+                @"com.apple.keylayout.Sinhala",
+                // Emoji/Symbol input (should not trigger Vietnamese)
+                @"com.apple.CharacterPaletteIM", @"com.apple.PressAndHold",
+                @"com.apple.inputmethod.EmojiFunctionRowItem"
+            ];
+        });
+        
+        for (NSString *pattern in nonLatinPatterns) {
+            if ([sourceIDStr containsString:pattern]) {
+                return NO;  // Non-Latin input source detected
+            }
+        }
+    }
+    
+    // Fallback: Check language code
     CFArrayRef languages = (CFArrayRef)TISGetInputSourceProperty(inputSource, kTISPropertyInputSourceLanguages);
     if (languages == NULL || CFArrayGetCount(languages) == 0) return YES;
     
@@ -231,6 +296,8 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
 }
 
 // Handle input source change notification
+// Supports auto-switching for ALL non-Latin keyboards:
+// Japanese, Chinese, Korean, Arabic, Hebrew, Thai, Hindi, Greek, Cyrillic, Georgian, Armenian, etc.
 - (void)handleInputSourceChanged:(NSNotification *)notification {
     // Only process if vOtherLanguage is enabled (user wants auto-switching)
     if (!vOtherLanguage) return;
@@ -239,8 +306,12 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
     if (currentInputSource == NULL) return;
     
     BOOL isLatin = [self isLatinInputSource:currentInputSource];
+    
+    // Get localized name for better logging
+    CFStringRef localizedName = (CFStringRef)TISGetInputSourceProperty(currentInputSource, kTISPropertyLocalizedName);
     CFStringRef sourceID = (CFStringRef)TISGetInputSourceProperty(currentInputSource, kTISPropertyInputSourceID);
-    NSString *inputSourceName = sourceID ? (__bridge NSString *)sourceID : @"Unknown";
+    NSString *displayName = localizedName ? (__bridge NSString *)localizedName : 
+                           (sourceID ? (__bridge NSString *)sourceID : @"Unknown");
     
     CFRelease(currentInputSource);
     
@@ -250,7 +321,7 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
         _isInNonLatinInputSource = YES;
         
         if (vLanguage != 0) {
-            NSLog(@"[InputSource] Switched to non-Latin keyboard (%@), auto-switching PHTV to English", inputSourceName);
+            NSLog(@"[InputSource] Detected non-Latin keyboard: %@ → Auto-switching PHTV to English", displayName);
             
             vLanguage = 0;  // Switch to English
             __sync_synchronize();
@@ -267,7 +338,7 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
         _isInNonLatinInputSource = NO;
         
         if (_savedLanguageBeforeNonLatin != 0 && vLanguage == 0) {
-            NSLog(@"[InputSource] Switched back to Latin keyboard (%@), restoring PHTV to Vietnamese", inputSourceName);
+            NSLog(@"[InputSource] Detected Latin keyboard: %@ → Restoring PHTV to Vietnamese", displayName);
             
             vLanguage = (int)_savedLanguageBeforeNonLatin;
             __sync_synchronize();
