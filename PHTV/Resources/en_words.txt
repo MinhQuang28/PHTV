@@ -1251,7 +1251,6 @@ rockpapershotgun
 # Vietnamese Tech Companies & Apps
 vng
 vingroup
-fpt
 viettel
 vnpt
 mobifone
