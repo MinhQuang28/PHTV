@@ -784,10 +784,6 @@ extern "C" {
     }
 
     __attribute__((always_inline)) static inline BOOL isSpotlightLikeApp(NSString* bundleId) {
-        // All Apple apps need special handling for Vietnamese input
-        if (bundleId != nil && [bundleId hasPrefix:@"com.apple."]) {
-            return YES;
-        }
         return bundleIdMatchesAppSet(bundleId, _forcePrecomposedAppSet);
     }
 
