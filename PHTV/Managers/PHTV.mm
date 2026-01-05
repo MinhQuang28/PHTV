@@ -2612,7 +2612,14 @@ extern "C" {
 
                             CFRelease(shiftLeftDown);
                             CFRelease(shiftLeftUp);
+                            
+                            // Small delay between each selection to ensure proper handling
+                            usleep(1000); // 1ms delay
                         }
+                        
+                        // Additional delay after selection to let Chromium process the selection
+                        // before we send replacement characters
+                        usleep(3000); // 3ms delay
 
                         // Mark backspaceCount as 0 since we've selected the text
                         // New characters will overwrite the selection
