@@ -2404,7 +2404,7 @@ struct EmojiCategoriesView: View {
     var onEmojiSelected: (String) -> Void
 
     private let database = EmojiDatabase.shared
-    @State private var selectedSubCategory = 0
+    @State private var selectedSubCategory: Int
     @State private var searchText = ""
     @State private var searchResults: [EmojiItem] = []
     @State private var searchTask: DispatchWorkItem?
@@ -2412,6 +2412,21 @@ struct EmojiCategoriesView: View {
     @Namespace private var subCategoryNamespace
 
     private let iconColumns = Array(repeating: GridItem(.flexible(), spacing: 12), count: 7)
+    
+    // Key for saving last selected emoji sub-category
+    private static let lastSubCategoryKey = "PHTVPickerLastEmojiSubCategory"
+    
+    init(onEmojiSelected: @escaping (String) -> Void) {
+        self.onEmojiSelected = onEmojiSelected
+        // Load last selected sub-category, default to 0 if not set or invalid
+        let savedSubCategory = UserDefaults.standard.integer(forKey: EmojiCategoriesView.lastSubCategoryKey)
+        // Validate saved value is within valid range
+        if savedSubCategory >= 0 && savedSubCategory < EmojiDatabase.shared.categories.count {
+            _selectedSubCategory = State(initialValue: savedSubCategory)
+        } else {
+            _selectedSubCategory = State(initialValue: 0)
+        }
+    }
 
     // Display emojis - from search results or current category
     private var displayedEmojis: [EmojiItem] {
@@ -2477,33 +2492,42 @@ struct EmojiCategoriesView: View {
 
             // Sub-category tabs (hidden when searching)
             if searchText.isEmpty {
-                ScrollView(.horizontal, showsIndicators: true) {
-                    HStack(spacing: 8) {
-                        ForEach(0..<database.categories.count, id: \.self) { index in
-                            Button(action: {
-                                withAnimation {
-                                    selectedSubCategory = index
+                ScrollViewReader { scrollProxy in
+                    ScrollView(.horizontal, showsIndicators: true) {
+                        HStack(spacing: 8) {
+                            ForEach(0..<database.categories.count, id: \.self) { index in
+                                Button(action: {
+                                    withAnimation {
+                                        selectedSubCategory = index
+                                    }
+                                }) {
+                                    HStack(spacing: 6) {
+                                        Text(database.categories[index].icon)
+                                            .font(.system(size: 16))
+                                        Text(database.categories[index].name)
+                                            .font(.system(size: 11, weight: selectedSubCategory == index ? .semibold : .regular))
+                                    }
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 6)
+                                    .background(
+                                        selectedSubCategory == index ?
+                                            Color.accentColor.opacity(0.15) : Color.clear
+                                    )
+                                    .cornerRadius(6)
                                 }
-                            }) {
-                                HStack(spacing: 6) {
-                                    Text(database.categories[index].icon)
-                                        .font(.system(size: 16))
-                                    Text(database.categories[index].name)
-                                        .font(.system(size: 11, weight: selectedSubCategory == index ? .semibold : .regular))
-                                }
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 6)
-                                .background(
-                                    selectedSubCategory == index ?
-                                        Color.accentColor.opacity(0.15) : Color.clear
-                                )
-                                .cornerRadius(6)
+                                .buttonStyle(.plain)
+                                .id(index)  // ID for scrolling
                             }
-                            .buttonStyle(.plain)
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                    }
+                    .onAppear {
+                        // Scroll to saved/selected sub-category when view appears
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            scrollProxy.scrollTo(selectedSubCategory, anchor: .center)
                         }
                     }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
                 }
             }
 
@@ -2541,6 +2565,10 @@ struct EmojiCategoriesView: View {
         }
         .onAppear {
             isSearchFocused = true
+        }
+        .onChange(of: selectedSubCategory) { newValue in
+            // Save selected sub-category to UserDefaults
+            UserDefaults.standard.set(newValue, forKey: EmojiCategoriesView.lastSubCategoryKey)
         }
     }
 }
