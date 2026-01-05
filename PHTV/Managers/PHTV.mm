@@ -2244,10 +2244,34 @@ extern "C" {
         HandleSpotlightCacheInvalidation(type, _keycode, _flag);
 
         // If pause key is being held, strip pause modifier from events to prevent special characters
+        // BUT only if no other modifiers are pressed (to preserve system shortcuts like Option+Cmd+V)
         if (_pauseKeyPressed && (type == kCGEventKeyDown || type == kCGEventKeyUp)) {
-            CGEventFlags newFlags = StripPauseModifier(_flag);
-            CGEventSetFlags(event, newFlags);
-            _flag = newFlags;  // Update local flag as well
+            // Check if other modifiers are pressed (excluding the pause key modifier)
+            CGEventFlags otherModifiers = _flag & ~kCGEventFlagMaskNonCoalesced;
+            
+            // Remove the pause key's modifier from the check
+            if (vPauseKey == KEY_LEFT_OPTION || vPauseKey == KEY_RIGHT_OPTION) {
+                otherModifiers &= ~kCGEventFlagMaskAlternate;
+            } else if (vPauseKey == KEY_LEFT_CONTROL || vPauseKey == KEY_RIGHT_CONTROL) {
+                otherModifiers &= ~kCGEventFlagMaskControl;
+            } else if (vPauseKey == KEY_LEFT_COMMAND || vPauseKey == KEY_RIGHT_COMMAND) {
+                otherModifiers &= ~kCGEventFlagMaskCommand;
+            } else if (vPauseKey == KEY_LEFT_SHIFT || vPauseKey == KEY_RIGHT_SHIFT) {
+                otherModifiers &= ~kCGEventFlagMaskShift;
+            } else if (vPauseKey == 63) {  // Fn key
+                otherModifiers &= ~kCGEventFlagMaskSecondaryFn;
+            }
+            
+            // Only strip if no other significant modifiers are pressed
+            // This preserves system shortcuts like Option+Cmd+V (move file)
+            BOOL hasOtherModifiers = (otherModifiers & (kCGEventFlagMaskCommand | kCGEventFlagMaskControl | 
+                                                         kCGEventFlagMaskAlternate | kCGEventFlagMaskShift)) != 0;
+            
+            if (!hasOtherModifiers) {
+                CGEventFlags newFlags = StripPauseModifier(_flag);
+                CGEventSetFlags(event, newFlags);
+                _flag = newFlags;  // Update local flag as well
+            }
         }
 
         if (type == kCGEventKeyDown && vPerformLayoutCompat) {
