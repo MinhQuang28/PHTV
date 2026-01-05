@@ -2733,7 +2733,12 @@ extern "C" {
                 //send backspace
                 if (!skipProcessing && pData->backspaceCount > 0 && pData->backspaceCount < MAX_BUFF) {
                     // Use Spotlight-style deferred backspace when in search field (spotlightActive) or Spotlight-like app
-                    if (spotlightActive || appChars.isSpotlightLike) {
+                    // EXCEPT for Auto English restore (extCode=5) on Chromium apps - use direct backspace instead
+                    // because Chromium's autocomplete interferes with AX API fallback
+                    BOOL isAutoEnglishRestore = (pData->extCode == 5);
+                    BOOL isChromiumApp = [_unicodeCompoundAppSet containsObject:effectiveBundleId];
+                    
+                    if ((spotlightActive || appChars.isSpotlightLike) && !(isAutoEnglishRestore && isChromiumApp)) {
                         // Defer deletion to AX replacement inside SendNewCharString().
                         _phtvPendingBackspaceCount = (int)pData->backspaceCount;
 #ifdef DEBUG
@@ -2749,12 +2754,21 @@ extern "C" {
                 // perform deterministic replacement (AX) and/or per-character Unicode posting.
                 // Forcing step-by-step here would skip deferred deletions and cause duplicated letters.
                 // TEXT REPLACEMENT FIX: Skip if already determined we should skip processing
+                // EXCEPTION: Auto English restore (extCode=5) on Chromium apps should use step-by-step
+                // because Chromium's autocomplete interferes with AX API and Unicode string posting
                 if (!skipProcessing) {
-                    BOOL isSpotlightTarget = spotlightActive || appChars.isSpotlightLike;
-                    BOOL useStepByStep = (!isSpotlightTarget) && (vSendKeyStepByStep || appChars.needsStepByStep);
+                    BOOL isAutoEnglishRestore = (pData->extCode == 5);
+                    BOOL isChromiumApp = [_unicodeCompoundAppSet containsObject:effectiveBundleId];
+                    
+                    // For Auto English on Chromium apps, force step-by-step to avoid race conditions
+                    BOOL isSpotlightTarget = (spotlightActive || appChars.isSpotlightLike) && !(isAutoEnglishRestore && isChromiumApp);
+                    BOOL useStepByStep = (!isSpotlightTarget) && (vSendKeyStepByStep || appChars.needsStepByStep || (isAutoEnglishRestore && isChromiumApp));
 #ifdef DEBUG
                     if (isSpotlightTarget) {
                         PHTVSpotlightDebugLog([NSString stringWithFormat:@"willSend stepByStep=%d backspaceCount=%d newCharCount=%d", (int)useStepByStep, (int)pData->backspaceCount, (int)pData->newCharCount]);
+                    }
+                    if (isAutoEnglishRestore && isChromiumApp) {
+                        NSLog(@"[AutoEnglish] Chromium app detected, using step-by-step for restore");
                     }
 #endif
                     if (!useStepByStep) {
