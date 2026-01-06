@@ -384,16 +384,46 @@ struct SystemSettingsView: View {
     private func createBackup() -> SettingsBackup {
         let defaults = UserDefaults.standard
 
-        // Collect all settings
+        // Collect all settings with correct UserDefaults keys
         var settings: [String: AnyCodableValue] = [:]
         let settingsKeys = [
-            "inputMethod", "codeTable", "checkSpelling", "restoreIfWrongSpelling",
-            "quickTelex", "modernOrthography", "autoCapsMacro", "quickEndConsonant",
-            "quickStartConsonant", "zAsConsonant", "freeMark",
-            "sendKeyStepByStep", "autoRestoreEnglish", "useMacro", "macroInEnglish",
-            "SwitchKeyStatus", "runOnStartup", "vShowIconOnDock", "themeColorHex",
-            "updateCheckFrequency", "betaChannelEnabled", "vAutoInstallUpdates", "vMenuBarIconSize",
-            "vUseVietnameseMenubarIcon", "vSettingsWindowAlwaysOnTop"
+            // Input method & code table
+            "InputType", "CodeTable",
+
+            // System settings
+            "PHTV_RunOnStartup", "vPerformLayoutCompat", "vShowIconOnDock",
+            "vSettingsWindowAlwaysOnTop", "SafeMode",
+            "vEnableLiquidGlassBackground", "vSettingsBackgroundOpacity",
+
+            // Switch key (hotkey)
+            "SwitchKeyStatus",
+
+            // Input behavior
+            "Spelling", "ModernOrthography", "QuickTelex", "RestoreIfInvalidWord",
+            "SendKeyStepByStep", "UseMacro", "UseMacroInEnglishMode", "vAutoCapsMacro",
+            "UseSmartSwitchKey", "UpperCaseFirstChar", "vAllowConsonantZFWJ",
+            "vQuickStartConsonant", "vQuickEndConsonant", "vRememberCode",
+
+            // Auto restore English
+            "vAutoRestoreEnglishWord",
+
+            // Typing statistics
+            "vTypingStatsEnabled",
+
+            // Restore key
+            "vRestoreOnEscape", "vCustomEscapeKey",
+
+            // Pause key
+            "vPauseKeyEnabled", "vPauseKey", "vPauseKeyName",
+
+            // Emoji hotkey
+            "vEnableEmojiHotkey", "vEmojiHotkeyModifiers", "vEmojiHotkeyKeyCode",
+
+            // Audio & display
+            "vBeepOnModeSwitch", "vBeepVolume", "vMenuBarIconSize", "vUseVietnameseMenubarIcon",
+
+            // Update settings
+            "SUScheduledCheckInterval", "SUEnableBetaChannel", "vAutoInstallUpdates"
         ]
 
         for key in settingsKeys {
@@ -416,19 +446,29 @@ struct SystemSettingsView: View {
             categories = items
         }
 
-        // Load excluded apps
-        var excludedApps: [String]?
-        if let apps = defaults.stringArray(forKey: "excludedApps") {
-            excludedApps = apps
+        // Load excluded apps (new format)
+        var excludedAppsV2: [ExcludedApp]?
+        if let data = defaults.data(forKey: "ExcludedApps"),
+           let apps = try? JSONDecoder().decode([ExcludedApp].self, from: data) {
+            excludedAppsV2 = apps
+        }
+
+        // Load send key step by step apps
+        var stepByStepApps: [ExcludedApp]?
+        if let data = defaults.data(forKey: "SendKeyStepByStepApps"),
+           let apps = try? JSONDecoder().decode([ExcludedApp].self, from: data) {
+            stepByStepApps = apps
         }
 
         return SettingsBackup(
-            version: "1.0",
+            version: "2.0",
             exportDate: ISO8601DateFormatter().string(from: Date()),
             settings: settings,
             macros: macros,
             macroCategories: categories,
-            excludedApps: excludedApps
+            excludedApps: nil,  // Legacy format no longer used
+            excludedAppsV2: excludedAppsV2,
+            sendKeyStepByStepApps: stepByStepApps
         )
     }
 
@@ -484,9 +524,31 @@ struct SystemSettingsView: View {
             }
         }
 
-        // Apply excluded apps
-        if let excludedApps = backup.excludedApps {
-            defaults.set(excludedApps, forKey: "excludedApps")
+        // Apply excluded apps (prefer new format, fallback to legacy)
+        if let excludedAppsV2 = backup.excludedAppsV2 {
+            // New format with full app info
+            if let encoded = try? JSONEncoder().encode(excludedAppsV2) {
+                defaults.set(encoded, forKey: "ExcludedApps")
+            }
+        } else if let excludedApps = backup.excludedApps {
+            // Legacy format: convert bundle IDs to ExcludedApp objects
+            let apps = excludedApps.map { bundleId in
+                ExcludedApp(
+                    bundleIdentifier: bundleId,
+                    name: bundleId.components(separatedBy: ".").last ?? bundleId,
+                    path: ""
+                )
+            }
+            if let encoded = try? JSONEncoder().encode(apps) {
+                defaults.set(encoded, forKey: "ExcludedApps")
+            }
+        }
+
+        // Apply send key step by step apps
+        if let stepByStepApps = backup.sendKeyStepByStepApps {
+            if let encoded = try? JSONEncoder().encode(stepByStepApps) {
+                defaults.set(encoded, forKey: "SendKeyStepByStepApps")
+            }
         }
 
         defaults.synchronize()
@@ -499,6 +561,8 @@ struct SystemSettingsView: View {
         NotificationCenter.default.post(name: NSNotification.Name("CustomDictionaryUpdated"), object: nil)
         NotificationCenter.default.post(name: NSNotification.Name("ExcludedAppsChanged"), object: nil)
         NotificationCenter.default.post(name: NSNotification.Name("PHTVSettingsChanged"), object: nil)
+        NotificationCenter.default.post(name: NSNotification.Name("HotkeyChanged"), object: NSNumber(value: defaults.integer(forKey: "SwitchKeyStatus")))
+        NotificationCenter.default.post(name: NSNotification.Name("EmojiHotkeySettingsChanged"), object: nil)
 
         importData = nil
         successMessage = "Đã nhập cài đặt thành công!"
@@ -629,7 +693,9 @@ struct SettingsBackup: Codable, Sendable {
     var settings: [String: AnyCodableValue]?
     var macros: [MacroItem]?
     var macroCategories: [MacroCategory]?
-    var excludedApps: [String]?
+    var excludedApps: [String]?  // Legacy format (bundle IDs only)
+    var excludedAppsV2: [ExcludedApp]?  // New format with full app info
+    var sendKeyStepByStepApps: [ExcludedApp]?  // Apps with step-by-step key sending
 }
 
 struct AnyCodableValue: Codable, @unchecked Sendable {

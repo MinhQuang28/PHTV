@@ -1053,6 +1053,10 @@ extern "C" {
     bool _restoreModifierPressed = false;
     bool _keyPressedWithRestoreModifier = false;
 
+    // For switch hotkey exact match - prevent prefix matching
+    // (e.g., Cmd+Shift should NOT trigger when user presses Cmd+Shift+S)
+    bool _keyPressedWhileSwitchModifiersHeld = false;
+
     // For pause key detection - temporarily disable Vietnamese when holding key
     bool _pauseKeyPressed = false;
     int _savedLanguageBeforePause = 1; // Save language state before pause (1 = Vietnamese, 0 = English)
@@ -1845,7 +1849,34 @@ extern "C" {
         }
         return true;
     }
-    
+
+    // Check if ALL modifier keys required by a hotkey are currently held
+    // This is used to detect if user is in the process of pressing a modifier combo
+    // Returns true if current flags CONTAIN all required modifiers (may have extra modifiers)
+    bool hotkeyModifiersAreHeld(int hotKeyData, CGEventFlags currentFlags) {
+        if ((hotKeyData & (~0x8000)) == EMPTY_HOTKEY)
+            return false;
+
+        // Check if all required modifiers are present in current flags
+        if (HAS_CONTROL(hotKeyData) && !(currentFlags & kCGEventFlagMaskControl))
+            return false;
+        if (HAS_OPTION(hotKeyData) && !(currentFlags & kCGEventFlagMaskAlternate))
+            return false;
+        if (HAS_COMMAND(hotKeyData) && !(currentFlags & kCGEventFlagMaskCommand))
+            return false;
+        if (HAS_SHIFT(hotKeyData) && !(currentFlags & kCGEventFlagMaskShift))
+            return false;
+        if (HAS_FN(hotKeyData) && !(currentFlags & kCGEventFlagMaskSecondaryFn))
+            return false;
+
+        return true;
+    }
+
+    // Check if this is a modifier-only hotkey (no specific key required, keycode = 0xFE)
+    bool isModifierOnlyHotkey(int hotKeyData) {
+        return GET_SWITCH_KEY(hotKeyData) == 0xFE;
+    }
+
     void switchLanguage() {
         // Beep is now handled by SwiftUI when LanguageChangedFromBackend notification is posted
         // (removed NSBeep() to avoid duplicate sounds)
@@ -2291,10 +2322,26 @@ extern "C" {
             if (vRestoreOnEscape && vCustomEscapeKey > 0 && _restoreModifierPressed) {
                 _keyPressedWithRestoreModifier = true;
             }
+
+            // Track if any key is pressed while switch hotkey modifiers are held
+            // This prevents modifier-only hotkeys (like Cmd+Shift) from triggering
+            // when user presses a key combo like Cmd+Shift+S
+            bool switchIsModifierOnly = isModifierOnlyHotkey(vSwitchKeyStatus);
+            bool convertIsModifierOnly = isModifierOnlyHotkey(convertToolHotKey);
+            if (switchIsModifierOnly || convertIsModifierOnly) {
+                bool switchModifiersHeld = switchIsModifierOnly && hotkeyModifiersAreHeld(vSwitchKeyStatus, _flag);
+                bool convertModifiersHeld = convertIsModifierOnly && hotkeyModifiersAreHeld(convertToolHotKey, _flag);
+                if (switchModifiersHeld || convertModifiersHeld) {
+                    _keyPressedWhileSwitchModifiersHeld = true;
+                }
+            }
         } else if (type == kCGEventFlagsChanged) {
             if (_lastFlag == 0 || _lastFlag < _flag) {
                 // Pressing more modifiers
                 _lastFlag = _flag;
+
+                // Reset switch modifier tracking when modifiers change (user starting a new combo)
+                _keyPressedWhileSwitchModifiersHeld = false;
 
                 // Check if restore modifier key is being pressed
                 if (vRestoreOnEscape && vCustomEscapeKey > 0) {
@@ -2366,19 +2413,30 @@ extern "C" {
                 // Check if pause key is being released - restore Vietnamese mode
                 HandlePauseKeyRelease(_lastFlag, _flag);
 
-                //check switch
-                if (checkHotKey(vSwitchKeyStatus, GET_SWITCH_KEY(vSwitchKeyStatus) != 0xFE)) {
+                // Check switch hotkey - only trigger if no other key was pressed
+                // while the modifier combination was held (exact match requirement)
+                // This prevents Cmd+Shift from triggering when user presses Cmd+Shift+S
+                bool switchIsModifierOnly = isModifierOnlyHotkey(vSwitchKeyStatus);
+                bool canTriggerSwitch = !switchIsModifierOnly || !_keyPressedWhileSwitchModifiersHeld;
+                if (canTriggerSwitch && checkHotKey(vSwitchKeyStatus, GET_SWITCH_KEY(vSwitchKeyStatus) != 0xFE)) {
                     _lastFlag = 0;
+                    _keyPressedWhileSwitchModifiersHeld = false;
                     switchLanguage();
                     _hasJustUsedHotKey = true;
                     return NULL;
                 }
-                if (checkHotKey(convertToolHotKey, GET_SWITCH_KEY(convertToolHotKey) != 0xFE)) {
+
+                // Check convert tool hotkey with same exact match logic
+                bool convertIsModifierOnly = isModifierOnlyHotkey(convertToolHotKey);
+                bool canTriggerConvert = !convertIsModifierOnly || !_keyPressedWhileSwitchModifiersHeld;
+                if (canTriggerConvert && checkHotKey(convertToolHotKey, GET_SWITCH_KEY(convertToolHotKey) != 0xFE)) {
                     _lastFlag = 0;
+                    _keyPressedWhileSwitchModifiersHeld = false;
                     [appDelegate onQuickConvert];
                     _hasJustUsedHotKey = true;
                     return NULL;
                 }
+
                 //check temporarily turn off spell checking
                 if (vTempOffSpelling && !_hasJustUsedHotKey && _lastFlag & kCGEventFlagMaskControl) {
                     vTempOffSpellChecking();
@@ -2387,6 +2445,7 @@ extern "C" {
                     vTempOffEngine();
                 }
                 _lastFlag = 0;
+                _keyPressedWhileSwitchModifiersHeld = false;
                 _hasJustUsedHotKey = false;
             }
         }
