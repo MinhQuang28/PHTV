@@ -140,33 +140,33 @@ open /Applications/PHTV.app
 <table>
 <tr>
 <td width="25%" align="center">
-<img src="PHTV/Resources/UI/Setting_1_bogo.png" alt="Settings - Bộ gõ" width="100%">
+<img src="docs/images/Setting_1_bogo.png" alt="Settings - Bộ gõ" width="100%">
 <p><em>Bộ gõ</em></p>
 </td>
 <td width="25%" align="center">
-<img src="PHTV/Resources/UI/Setting_2_phimtat.png" alt="Settings - Phím tắt" width="100%">
+<img src="docs/images/Setting_2_phimtat.png" alt="Settings - Phím tắt" width="100%">
 <p><em>Phím tắt</em></p>
 </td>
 <td width="25%" align="center">
-<img src="PHTV/Resources/UI/Setting_3_gotat.png" alt="Settings - Gõ tắt" width="100%">
+<img src="docs/images/Setting_3_gotat.png" alt="Settings - Gõ tắt" width="100%">
 <p><em>Gõ tắt</em></p>
 </td>
 <td width="25%" align="center">
-<img src="PHTV/Resources/UI/Setting_4_ungdung.png" alt="Settings - Ứng dụng" width="100%">
+<img src="docs/images/Setting_4_ungdung.png" alt="Settings - Ứng dụng" width="100%">
 <p><em>Ứng dụng</em></p>
 </td>
 </tr>
 <tr>
 <td width="25%" align="center">
-<img src="PHTV/Resources/UI/Setting_5_hethong.png" alt="Settings - Hệ thống" width="100%">
+<img src="docs/images/Setting_5_hethong.png" alt="Settings - Hệ thống" width="100%">
 <p><em>Hệ thống</em></p>
 </td>
 <td width="25%" align="center">
-<img src="PHTV/Resources/UI/Setting_6_baoloi.png" alt="Settings - Báo lỗi" width="100%">
+<img src="docs/images/Setting_6_baoloi.png" alt="Settings - Báo lỗi" width="100%">
 <p><em>Báo lỗi</em></p>
 </td>
 <td width="25%" align="center">
-<img src="PHTV/Resources/UI/Setting_7_thongtin.png" alt="Settings - Thông tin" width="100%">
+<img src="docs/images/Setting_7_thongtin.png" alt="Settings - Thông tin" width="100%">
 <p><em>Thông tin</em></p>
 </td>
 <td width="25%"></td>
