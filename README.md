@@ -112,6 +112,31 @@ open /Applications/PHTV.app
 
 <div align="center">
 
+<div align="center">
+
+### Menu Bar & PHTV Picker
+
+<table>
+<tr>
+<td width="20%" align="center">
+<img src="docs/images/ui/menubar_ui.png" alt="Menu Bar UI" width="200">
+<p><em>Menu Bar</em></p>
+</td>
+<td width="26%" align="center">
+<img src="docs/images/ui/PHTV_Picker_1_Emoji.png" alt="PHTV Picker - Emoji" width="280">
+<p><em>Emoji Picker</em></p>
+</td>
+<td width="26%" align="center">
+<img src="docs/images/ui/PHTV_Picker_2_GIF.png" alt="PHTV Picker - GIF" width="280">
+<p><em>GIF Picker</em></p>
+</td>
+<td width="26%" align="center">
+<img src="docs/images/ui/PHTV_Picker_3_Sticker.png" alt="PHTV Picker - Sticker" width="280">
+<p><em>Sticker Picker</em></p>
+</td>
+</tr>
+</table>
+
 ### Settings
 
 <table>
