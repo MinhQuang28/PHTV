@@ -26,7 +26,6 @@
 // Performance & Cache Configuration
 static const uint64_t SPOTLIGHT_CACHE_DURATION_MS = 50;      // Spotlight detection cache timeout
 static const uint64_t PID_CACHE_CLEAN_INTERVAL_MS = 60000;   // 60 seconds - PID cache cleanup (Reduced from 5 mins to fix WhatsApp issues)
-static const NSUInteger MAX_PID_CACHE_SIZE = 100;            // Maximum PID cache entries
 static const NSUInteger PID_CACHE_INITIAL_CAPACITY = 128;    // Initial PID cache capacity
 static const uint64_t DEBUG_LOG_THROTTLE_MS = 500;           // Debug log throttling interval
 static const uint64_t APP_SWITCH_CACHE_DURATION_MS = 100;    // App switch detection cache timeout
