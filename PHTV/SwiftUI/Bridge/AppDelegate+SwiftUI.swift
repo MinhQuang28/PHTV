@@ -94,6 +94,12 @@ extension AppDelegate {
                 // Set window level based on user preference
                 let alwaysOnTop = UserDefaults.standard.bool(forKey: "vSettingsWindowAlwaysOnTop")
                 openWindow.level = alwaysOnTop ? .floating : .normal
+                
+                // FIX: Ensure robust window behavior
+                openWindow.hidesOnDeactivate = false
+                openWindow.isMovableByWindowBackground = true
+                openWindow.collectionBehavior = [.managed, .participatesInCycle, .moveToActiveSpace, .fullScreenAuxiliary]
+                
                 openWindow.makeKeyAndOrderFront(nil)
             } else {
                 // Post notification to open settings first (will be handled by SettingsNotificationObserver)

@@ -148,12 +148,27 @@ struct SettingsWindowContent: View {
                 let identifier = window.identifier?.rawValue ?? ""
                 if identifier.hasPrefix("settings") {
                     // Set window level based on user preference
+                    // FIX: Use .floating (3) for always on top, .normal (0) for standard
+                    // When in .normal mode, ensure it doesn't drop behind by forcing orderFront
                     window.level = appState.settingsWindowAlwaysOnTop ? .floating : .normal
 
                     // Keep content transparent but titlebar opaque (no glass effect on titlebar)
                     // DO NOT set titlebarAppearsTransparent - that creates unwanted glass titlebar
                     window.isOpaque = false
                     window.backgroundColor = .clear
+
+                    // FIX: Ensure window doesn't disappear when app loses focus
+                    window.hidesOnDeactivate = false
+                    
+                    // FIX: Ensure window is movable by background (critical for hiddenTitleBar)
+                    window.isMovableByWindowBackground = true
+                    
+                    // FIX: standard behavior, participate in Cycle, move to active space
+                    window.collectionBehavior = [.managed, .participatesInCycle, .moveToActiveSpace, .fullScreenAuxiliary]
+
+                    if appState.settingsWindowAlwaysOnTop {
+                         window.orderFront(nil)
+                    }
 
                     NSLog("[SettingsWindowContent] Set window.level = %@ for window: %@",
                           appState.settingsWindowAlwaysOnTop ? ".floating" : ".normal", identifier)
@@ -270,6 +285,12 @@ enum SettingsWindowHelper {
                 // Set window level based on user preference
                 let alwaysOnTop = UserDefaults.standard.bool(forKey: "vSettingsWindowAlwaysOnTop")
                 window.level = alwaysOnTop ? .floating : .normal
+                
+                // FIX: Ensure robust window behavior matching SettingsWindowContent
+                window.hidesOnDeactivate = false
+                window.isMovableByWindowBackground = true
+                window.collectionBehavior = [.managed, .participatesInCycle, .moveToActiveSpace, .fullScreenAuxiliary]
+                
                 NSLog("[SettingsWindowHelper] Set window.level = %@", alwaysOnTop ? ".floating" : ".normal")
 
                 // Bring window to front

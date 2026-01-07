@@ -1094,16 +1094,28 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
     }
 }
 
+// Helper to robustly check if settings window is visible
+- (BOOL)isSettingsWindowVisible {
+    for (NSWindow *window in [NSApp windows]) {
+        NSString *identifier = window.identifier;
+        // SwiftUI windows have identifier starting with "settings" (set in PHTPApp.swift)
+        if (identifier && [identifier hasPrefix:@"settings"] && window.isVisible) {
+            return YES;
+        }
+    }
+    return NO;
+}
+
 // Handle dock icon visibility notification from SwiftUI
 - (void)handleShowDockIconNotification:(NSNotification *)notification {
     BOOL visible = [[notification.userInfo objectForKey:@"visible"] boolValue];
     NSLog(@"[AppDelegate] handleShowDockIconNotification: visible=%d", visible);
     
-    // Track settings window state
+    // Update settingsWindowOpen for legacy checks, but rely on isSettingsWindowVisible for logic
     settingsWindowOpen = visible;
     
     dispatch_async(dispatch_get_main_queue(), ^{
-        if (visible) {
+        if (visible || [self isSettingsWindowVisible]) {
             [NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
             [NSApp activateIgnoringOtherApps:YES];
             
@@ -1112,6 +1124,8 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
                 NSString *identifier = window.identifier;
                 if (identifier && [identifier hasPrefix:@"settings"]) {
                     [window makeKeyAndOrderFront:nil];
+                    // FORCE window to be main/key to prevent sinking
+                    [window makeKeyWindow]; 
                     [window orderFrontRegardless];
                     NSLog(@"[AppDelegate] Brought settings window to front: %@", identifier);
                     break;
@@ -1220,9 +1234,10 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
     // Apply dock icon visibility immediately with async dispatch
     // BUT only if settings window is not currently open (it needs dock icon visible)
     dispatch_async(dispatch_get_main_queue(), ^{
-        if (settingsWindowOpen) {
+        // CRITICAL FIX: Use isSettingsWindowVisible check instead of fragile boolean
+        if ([self isSettingsWindowVisible] || settingsWindowOpen) {
             // Settings window is open - keep dock icon visible regardless of preference
-            NSLog(@"[AppDelegate] Settings window open, keeping dock icon visible");
+            NSLog(@"[AppDelegate] Settings window open (verified), keeping dock icon visible");
             return;
         }
         NSApplicationActivationPolicy policy = vShowIconOnDock ? NSApplicationActivationPolicyRegular : NSApplicationActivationPolicyAccessory;
