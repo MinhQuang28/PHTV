@@ -25,7 +25,7 @@
 
 // Performance & Cache Configuration
 static const uint64_t SPOTLIGHT_CACHE_DURATION_MS = 50;      // Spotlight detection cache timeout
-static const uint64_t PID_CACHE_CLEAN_INTERVAL_MS = 300000;  // 5 minutes - PID cache cleanup
+static const uint64_t PID_CACHE_CLEAN_INTERVAL_MS = 60000;   // 60 seconds - PID cache cleanup (Reduced from 5 mins to fix WhatsApp issues)
 static const NSUInteger MAX_PID_CACHE_SIZE = 100;            // Maximum PID cache entries
 static const NSUInteger PID_CACHE_INITIAL_CAPACITY = 128;    // Initial PID cache capacity
 static const uint64_t DEBUG_LOG_THROTTLE_MS = 500;           // Debug log throttling interval
@@ -421,21 +421,17 @@ NSString* getBundleIdFromPID(pid_t pid) {
 
     NSString *cached = _pidBundleCache[pidKey];
 
-    // Smart cache cleanup: Limit growth but keep hot entries
-    // Check every 5 minutes and only clean if cache grows too large
+    // Smart cache cleanup: Check every 60 seconds
+    // Force clean ALL entries to ensure we handle app restarts/updates (like WhatsApp)
+    // Re-populating cache is cheap (NSRunningApplication is fast) vs user facing bugs
     uint64_t now = mach_absolute_time();
     uint64_t elapsed_ms = mach_time_to_ms(now - _lastCacheCleanTime);
     if (__builtin_expect(elapsed_ms > PID_CACHE_CLEAN_INTERVAL_MS, 0)) {
-        // Only remove half the entries if cache exceeds maximum size
-        // This preserves hot entries better than removeAllObjects
-        if (_pidBundleCache.count > MAX_PID_CACHE_SIZE) {
-            // Remove approximately half by removing every other entry
-            NSArray *keys = [_pidBundleCache allKeys];
-            for (NSUInteger i = 0; i < keys.count; i += 2) {
-                [_pidBundleCache removeObjectForKey:keys[i]];
-            }
-        }
+        [_pidBundleCache removeAllObjects];
         _lastCacheCleanTime = now;
+        #ifdef DEBUG
+        NSLog(@"[Cache] PID cache cleared (interval expired)");
+        #endif
     }
     
     os_unfair_lock_unlock(&_pidCacheLock);
