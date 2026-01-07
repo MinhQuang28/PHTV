@@ -1844,6 +1844,12 @@ Uint32 getEngineCharFromUnicode(const Uint16& ch) {
 }
 
 void vRestoreSessionWithWord(const wstring& word) {
+    // 1. Capture current raw keys if any (user typed while we were detecting)
+    vector<Uint32> pendingKeys;
+    for (int i = 0; i < _stateIndex; i++) {
+        pendingKeys.push_back(KeyStates[i]);
+    }
+
     startNewSession();
     
     for (size_t i = 0; i < word.length() && i < MAX_BUFF; i++) {
@@ -1861,4 +1867,17 @@ void vRestoreSessionWithWord(const wstring& word) {
     
     // Restore checking state based on validity
     checkSpelling(); 
+    
+    // 3. Replay pending keys
+    if (!pendingKeys.empty()) {
+        #ifdef DEBUG
+        printf("[PHTV Restore] Replaying %lu pending keys\n", pendingKeys.size());
+        #endif
+        for (Uint32 keyData : pendingKeys) {
+            Uint16 keyCode = keyData & CHAR_MASK;
+            bool isCaps = (keyData & CAPS_MASK) != 0;
+            // Replay as keyboard event
+            vKeyHandleEvent(vKeyEvent::Keyboard, vKeyEventState::KeyDown, keyCode, isCaps ? 1 : 0, false);
+        }
+    }
 }
