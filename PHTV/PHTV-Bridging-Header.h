@@ -20,8 +20,7 @@
 
 // Utils
 #import "Utils/MJAccessibilityUtils.h"
-#import "Utils/UsageStats.h"
-#import "Utils/PHTVUtilities.h"
+#import "Application/PHSilentUserDriver.h"
 
 // Core
 #import "Core/PHTVConfig.h"

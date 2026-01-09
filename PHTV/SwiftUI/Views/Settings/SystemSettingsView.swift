@@ -407,9 +407,6 @@ struct SystemSettingsView: View {
             // Auto restore English
             "vAutoRestoreEnglishWord",
 
-            // Typing statistics
-            "vTypingStatsEnabled",
-
             // Restore key
             "vRestoreOnEscape", "vCustomEscapeKey",
 

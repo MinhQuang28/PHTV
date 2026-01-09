@@ -1761,9 +1761,6 @@ extern "C" {
         }
         if (!_willContinuteSending && pData->code == vRestoreAndStartNewSession) {
             startNewSession();
-            // Post typing stats notification for word completion
-            // @YES if Vietnamese (vLanguage==1), @NO if English (vLanguage==0)
-            [[NSNotificationCenter defaultCenter] postNotificationName:@"TypingStatsWord" object:@(vLanguage == 1)];
         }
         
         // If we need to force precomposed Unicode (for apps like Spotlight), 
@@ -2496,14 +2493,6 @@ extern "C" {
                 }
             }
 
-            // Post typing stats notification for English word completion
-            // Track words when SPACE or word break keys are pressed
-            if (type == kCGEventKeyDown &&
-                (_keycode == KEY_SPACE || _keycode == KEY_ENTER || _keycode == KEY_RETURN ||
-                 _keycode == KEY_TAB || _keycode == KEY_COMMA || _keycode == KEY_DOT)) {
-                [[NSNotificationCenter defaultCenter] postNotificationName:@"TypingStatsWord" object:@NO];
-            }
-
             return event;
         }
         
@@ -2680,11 +2669,6 @@ extern "C" {
                       pData->code, pData->extCode);
             }
 #endif
-
-            // Post typing stats notification for character (only for printable characters)
-            if (!OTHER_CONTROL_KEY && keyCodeToCharacter(_keycode) != 0) {
-                [[NSNotificationCenter defaultCenter] postNotificationName:@"TypingStatsCharacter" object:nil];
-            }
 
             if (pData->code == vDoNothing) { //do nothing
                 // Navigation keys: trigger session restore to support keyboard-based edit-in-place
@@ -2909,9 +2893,6 @@ extern "C" {
                         }
                         if (pData->code == vRestoreAndStartNewSession) {
                             startNewSession();
-                            // Post typing stats notification for word completion
-                            // @YES if Vietnamese (vLanguage==1), @NO if English (vLanguage==0)
-                            [[NSNotificationCenter defaultCenter] postNotificationName:@"TypingStatsWord" object:@(vLanguage == 1)];
                         }
                     }
                 }

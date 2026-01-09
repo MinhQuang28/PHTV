@@ -436,9 +436,6 @@ final class AppState: ObservableObject {
     // Auto restore English words
     @Published var autoRestoreEnglishWord: Bool = false
 
-    // Typing statistics
-    @Published var typingStatsEnabled: Bool = false
-
     // Restore to raw keys (customizable key)
     @Published var restoreOnEscape: Bool = true
     @Published var restoreKey: RestoreKey = .esc
@@ -863,9 +860,6 @@ final class AppState: ObservableObject {
         // Auto restore English words
         autoRestoreEnglishWord = defaults.bool(forKey: "vAutoRestoreEnglishWord")
 
-        // Typing statistics
-        typingStatsEnabled = defaults.bool(forKey: "vTypingStatsEnabled")
-
         // Restore to raw keys (customizable key)
         restoreOnEscape = defaults.object(forKey: "vRestoreOnEscape") as? Bool ?? true
         let restoreKeyCode = defaults.integer(forKey: "vCustomEscapeKey")
@@ -1031,9 +1025,6 @@ final class AppState: ObservableObject {
 
         // Auto restore English words
         defaults.set(autoRestoreEnglishWord, forKey: "vAutoRestoreEnglishWord")
-
-        // Typing statistics
-        defaults.set(typingStatsEnabled, forKey: "vTypingStatsEnabled")
 
         // Restore to raw keys (customizable key)
         defaults.set(restoreOnEscape, forKey: "vRestoreOnEscape")
@@ -1268,7 +1259,6 @@ final class AppState: ObservableObject {
         )
         .map { _ in () }
         .merge(with: $autoRestoreEnglishWord.map { _ in () })
-        .merge(with: $typingStatsEnabled.map { _ in () })
         .merge(with: $restoreOnEscape.map { _ in () })
         .merge(with: $restoreKey.map { _ in () })
         .merge(with: $pauseKeyEnabled.map { _ in () })
@@ -1477,7 +1467,6 @@ final class AppState: ObservableObject {
         quickEndConsonant = false
         rememberCode = true
         autoRestoreEnglishWord = false
-        typingStatsEnabled = false
 
         runOnStartup = false
         performLayoutCompat = false

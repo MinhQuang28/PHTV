@@ -16,7 +16,6 @@
 #import "SparkleManager.h"
 #import "../Managers/PHTVManager.h"
 #import "../Utils/MJAccessibilityUtils.h"
-#import "../Utils/UsageStats.h"
 #import "PHTV-Swift.h"
 #include "../Core/Engine/Engine.h"
 
@@ -772,9 +771,6 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
             // Start monitoring input source changes (for auto-switching when using Japanese/Chinese/etc. keyboards)
             [self startInputSourceMonitoring];
 
-            // Start typing stats session
-            [[NSNotificationCenter defaultCenter] postNotificationName:@"TypingStatsSessionStart" object:nil];
-            
             NSInteger showui = [[NSUserDefaults standardUserDefaults] integerForKey:@"ShowUIOnStartup"];
             if (showui == 1) {
                 // Show settings via SwiftUI notification
@@ -813,9 +809,6 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
 - (void)applicationWillTerminate:(NSNotification *)aNotification {
     // Clear AX test flag on normal termination to prevent false safe mode activation
     [PHTVManager clearAXTestFlag];
-
-    // End typing stats session
-    [[NSNotificationCenter defaultCenter] postNotificationName:@"TypingStatsSessionEnd" object:nil];
 
     // Post notification for SwiftUI cleanup instead of direct call
     // AppState is @MainActor and cannot be called directly from Objective-C
@@ -1682,16 +1675,6 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
     
     [self.statusMenu addItem:[NSMenuItem separatorItem]];
     
-    // === EXTRAS ===
-    NSMenuItem* statsItem = [[NSMenuItem alloc] initWithTitle:@"Thống kê sử dụng" 
-                                                       action:@selector(showUsageStats) 
-                                                keyEquivalent:@"s"];
-    statsItem.target = self;
-    statsItem.keyEquivalentModifierMask = NSEventModifierFlagCommand;
-    [self.statusMenu addItem:statsItem];
-
-    [self.statusMenu addItem:[NSMenuItem separatorItem]];
-    
     // === QUIT ===
     NSMenuItem* quitItem = [[NSMenuItem alloc] initWithTitle:@"Thoát PHTV" 
                                                       action:@selector(terminate:) 
@@ -2251,61 +2234,6 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
         @"❌ Đã tắt khởi động cùng hệ thống";
     
     NSLog(@"%@", message);
-}
-
-#pragma mark - Update Checker
-- (void)showUsageStats {
-    NSDictionary *stats = [[UsageStats shared] getStatsSummary];
-    
-    NSString *message = [NSString stringWithFormat:
-        @"📊 THỐNG KÊ SỬ DỤNG\n\n"
-        @"Hôm nay:\n"
-        @"• Từ đã gõ: %@ từ\n"
-        @"• Ký tự đã gõ: %@ ký tự\n\n"
-        @"Tổng cộng:\n"
-        @"• Từ đã gõ: %@ từ\n"
-        @"• Ký tự đã gõ: %@ ký tự",
-        [self formatNumber:stats[@"todayWords"]],
-        [self formatNumber:stats[@"todayCharacters"]],
-        [self formatNumber:stats[@"totalWords"]],
-        [self formatNumber:stats[@"totalCharacters"]]
-    ];
-    
-    NSAlert *alert = [[NSAlert alloc] init];
-    [alert setMessageText:@"Thống kê sử dụng PHTV"];
-    [alert setInformativeText:message];
-    [alert addButtonWithTitle:@"OK"];
-    [alert addButtonWithTitle:@"Reset thống kê"];
-    [alert setAlertStyle:NSAlertStyleInformational];
-    
-    NSModalResponse response = [alert runModal];
-    if (response == NSAlertSecondButtonReturn) {
-        NSAlert *confirmAlert = [[NSAlert alloc] init];
-        [confirmAlert setMessageText:@"Xác nhận reset"];
-        [confirmAlert setInformativeText:@"Bạn có chắc muốn reset toàn bộ thống kê?"];
-        [confirmAlert addButtonWithTitle:@"Hủy"];
-        [confirmAlert addButtonWithTitle:@"Reset"];
-        [confirmAlert setAlertStyle:NSAlertStyleWarning];
-        
-        if ([confirmAlert runModal] == NSAlertSecondButtonReturn) {
-            [[NSUserDefaults standardUserDefaults] setInteger:0 forKey:@"StatsTotalWords"];
-            [[NSUserDefaults standardUserDefaults] setInteger:0 forKey:@"StatsTotalCharacters"];
-            [[UsageStats shared] resetDailyStats];
-            
-            NSAlert *doneAlert = [[NSAlert alloc] init];
-            [doneAlert setMessageText:@"Đã reset thống kê"];
-            [doneAlert setInformativeText:@"Thống kê đã được reset về 0."];
-            [doneAlert addButtonWithTitle:@"OK"];
-            [doneAlert runModal];
-        }
-    }
-}
-
-- (NSString *)formatNumber:(NSNumber *)number {
-    NSNumberFormatter *formatter = [[NSNumberFormatter alloc] init];
-    [formatter setNumberStyle:NSNumberFormatterDecimalStyle];
-    [formatter setGroupingSeparator:@"."];
-    return [formatter stringFromNumber:number];
 }
 
 #pragma mark -Short key event
