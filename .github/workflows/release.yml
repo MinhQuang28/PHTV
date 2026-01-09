@@ -20,7 +20,7 @@ env:
 jobs:
   build:
     name: Build PHTV
-    runs-on: macos-13
+    runs-on: macos-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
       build_number: ${{ steps.version.outputs.build_number }}
@@ -33,6 +33,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Select Latest Xcode
+        run: |
+          LATEST_XCODE=$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)
+          echo "Using Xcode at $LATEST_XCODE"
+          sudo xcode-select -s "$LATEST_XCODE/Contents/Developer"
+          xcodebuild -version
 
       - name: Determine version
         id: version
@@ -83,14 +90,8 @@ jobs:
           curl -sL https://www.apple.com/certificateauthority/AppleWWDRCAG3.cer -o $RUNNER_TEMP/AppleWWDRCAG3.cer
           security import $RUNNER_TEMP/AppleWWDRCAG3.cer -k "$KEYCHAIN_PATH" -T /usr/bin/codesign -T /usr/bin/security
           
-          # Decode P12 file
-          # Try --decode (GNU) first, then -D (BSD/macOS)
-          if echo "$CERTIFICATES_P12" | base64 --decode > $RUNNER_TEMP/certificate.p12 2>/dev/null; then
-            echo "✅ Decoded using base64 --decode"
-          else
-            echo "$CERTIFICATES_P12" | base64 -D -o $RUNNER_TEMP/certificate.p12
-            echo "✅ Decoded using base64 -D"
-          fi
+          # Decode P12 file using openssl for cross-platform reliability
+          echo "$CERTIFICATES_P12" | openssl base64 -d -out $RUNNER_TEMP/certificate.p12
           
           # Import P12
           security import $RUNNER_TEMP/certificate.p12 \
