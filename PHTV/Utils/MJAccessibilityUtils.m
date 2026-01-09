@@ -10,6 +10,8 @@
 
 
 #import "MJAccessibilityUtils.h"
+#import "../Managers/PHTVManager.h"
+#import <AppKit/AppKit.h>
 // #import "HSLogger.h"
 
 extern Boolean AXAPIEnabled(void);
@@ -18,20 +20,19 @@ extern CFStringRef kAXTrustedCheckOptionPrompt __attribute__((weak_import));
 
 
 BOOL MJAccessibilityIsEnabled(void) {
-    BOOL isEnabled = NO;
-    if (AXIsProcessTrustedWithOptions != NULL)
-        isEnabled = AXIsProcessTrustedWithOptions(NULL);
-    else
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-        isEnabled = AXAPIEnabled();
-#pragma clang diagnostic pop
-
-//    HSNSLOG(@"Accessibility is: %@", isEnabled ? @"ENABLED" : @"DISABLED");
-    return isEnabled;
+    // CRITICAL FIX: Use PHTVManager's test tap check
+    // AXIsProcessTrusted() is unreliable and can return YES even when permission is broken
+    return [PHTVManager canCreateEventTap];
 }
 
 void MJAccessibilityOpenPanel(void) {
+    // Attempt to open System Settings directly to Privacy & Security -> Accessibility
+    // This bypasses AXIsProcessTrusted() which might fail to prompt if it falsely thinks it's trusted
+    NSURL *url = [NSURL URLWithString:@"x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"];
+    if ([[NSWorkspace sharedWorkspace] openURL:url]) {
+        return;
+    }
+
     if (AXIsProcessTrustedWithOptions != NULL) {
         AXIsProcessTrustedWithOptions((__bridge CFDictionaryRef)@{(__bridge id)kAXTrustedCheckOptionPrompt: @YES});
     }
