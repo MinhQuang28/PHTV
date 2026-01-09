@@ -437,11 +437,18 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
 }
 
 - (void)startAccessibilityMonitoring {
-    // Monitor accessibility status with 5s interval (optimized from 1s to reduce CPU usage)
+    [self startAccessibilityMonitoringWithInterval:[self currentMonitoringInterval]];
+}
+
+// Start monitoring with specific interval
+- (void)startAccessibilityMonitoringWithInterval:(NSTimeInterval)interval {
+    // Stop existing timer if any
+    [self stopAccessibilityMonitoring];
+
     // CRITICAL: Uses test event tap creation - ONLY reliable method (Apple recommended)
     // MJAccessibilityIsEnabled() returns TRUE even when permission is revoked!
-    // 5s is sufficient - permission changes are rare during normal operation
-    self.accessibilityMonitor = [NSTimer scheduledTimerWithTimeInterval:5.0
+    // Dynamic interval: 1s when waiting for permission (fast detection), 5s when granted (low overhead)
+    self.accessibilityMonitor = [NSTimer scheduledTimerWithTimeInterval:interval
                                                                   target:self
                                                                 selector:@selector(checkAccessibilityStatus)
                                                                 userInfo:nil
@@ -450,9 +457,14 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
     // Set initial state using test tap (reliable)
     self.wasAccessibilityEnabled = [PHTVManager canCreateEventTap];
 
-    #ifdef DEBUG
-    NSLog(@"[Accessibility] Started monitoring via test event tap (interval: 5s)");
-    #endif
+    NSLog(@"[Accessibility] Started monitoring via test event tap (interval: %.1fs)", interval);
+}
+
+// Get appropriate monitoring interval based on current permission state
+- (NSTimeInterval)currentMonitoringInterval {
+    // When waiting for permission: check every 1 second for fast response
+    // When permission granted: check every 5 seconds to reduce overhead
+    return self.wasAccessibilityEnabled ? 5.0 : 1.0;
 }
 
 - (void)stopAccessibilityMonitoring {
@@ -509,6 +521,13 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
         // Notify SwiftUI only on change
         [[NSNotificationCenter defaultCenter] postNotificationName:@"AccessibilityStatusChanged"
                                                             object:@(isEnabled)];
+
+        // IMPORTANT: Restart timer with appropriate interval based on new permission state
+        // When permission granted: switch to 5s interval (low overhead)
+        // When permission revoked: switch to 1s interval (fast re-detection)
+        NSTimeInterval newInterval = isEnabled ? 5.0 : 1.0;
+        NSLog(@"[Accessibility] Adjusting monitoring interval to %.1fs", newInterval);
+        [self startAccessibilityMonitoringWithInterval:newInterval];
     }
 
     // Permission was just granted (transition from disabled to enabled)
