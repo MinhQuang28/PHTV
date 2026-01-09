@@ -449,6 +449,15 @@ NSString* getBundleIdFromPID(pid_t pid) {
         return bundleId.length > 0 ? bundleId : nil;
     }
     
+    // Safe Mode: Skip proc_pidpath entirely for system processes to prevent crashes
+    // This fixes "Unable to obtain a task name port right" crash on macOS 15+ (Issue #80)
+    if (vSafeMode) {
+        os_unfair_lock_lock(&_pidCacheLock);
+        _pidBundleCache[pidKey] = @"";
+        os_unfair_lock_unlock(&_pidCacheLock);
+        return nil;
+    }
+    
     // Fallback: get process path and try to find bundle
     char pathBuffer[PROC_PIDPATHINFO_MAXSIZE];
     if (proc_pidpath(pid, pathBuffer, sizeof(pathBuffer)) > 0) {
@@ -2837,6 +2846,14 @@ extern "C" {
                     }
                 }
 
+                // FIX #79: Detect Auto-English restoration on Browsers (Chromium/Safari/Firefox)
+                // Browsers often drop backspace events during rapid restoration or have address bar autocomplete interference
+                // We need to force HID tap posting and use aggressive timing delays
+                BOOL isAutoEnglishBrowser = (isBrowserApp && pData->extCode == 5);
+                if (isAutoEnglishBrowser) {
+                    _phtvPostToHIDTap = YES; // Force HID tap for robustness
+                }
+
                 //send backspace
                 if (!skipProcessing && pData->backspaceCount > 0 && pData->backspaceCount < MAX_BUFF) {
                     // Use Spotlight-style deferred backspace when in search field (spotlightActive) or Spotlight-like app
@@ -2848,7 +2865,8 @@ extern "C" {
                         PHTVSpotlightDebugLog([NSString stringWithFormat:@"deferBackspace=%d newCharCount=%d", (int)pData->backspaceCount, (int)pData->newCharCount]);
 #endif
                     } else {
-                        SendBackspaceSequence(pData->backspaceCount, NO);
+                        // Pass isAutoEnglishBrowser as isTerminalApp to enable aggressive delays
+                        SendBackspaceSequence(pData->backspaceCount, isAutoEnglishBrowser);
                     }
                 }
                 
@@ -2864,7 +2882,8 @@ extern "C" {
                     // perform deterministic replacement (AX) and/or per-character Unicode posting.
                     // EXCEPT for Chromium apps - they don't support AX API properly
                     BOOL isSpotlightTarget = (!isBrowserApp && spotlightActive) || appChars.isSpotlightLike;
-                    BOOL useStepByStep = (!isSpotlightTarget) && (vSendKeyStepByStep || appChars.needsStepByStep);
+                    // FIX #79: Force step-by-step for Auto-English on Browsers
+                    BOOL useStepByStep = (!isSpotlightTarget) && (vSendKeyStepByStep || appChars.needsStepByStep || isAutoEnglishBrowser);
 #ifdef DEBUG
                     if (isSpotlightTarget) {
                         PHTVSpotlightDebugLog([NSString stringWithFormat:@"willSend stepByStep=%d backspaceCount=%d newCharCount=%d", (int)useStepByStep, (int)pData->backspaceCount, (int)pData->newCharCount]);
