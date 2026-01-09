@@ -8,35 +8,6 @@
 
 import SwiftUI
 
-// MARK: - Future Compatibility Shim (macOS 26.0)
-// This shim ensures the code compiles on SDKs that don't have these APIs yet (like on CI runners),
-// or provides the definition if the compiler needs it to resolve the symbol inside the availability block.
-// We use #if !compiler(>= 6.0) to only apply this on older compilers (CI/Xcode 15) to avoid conflicts
-// with newer SDKs (Local/Xcode 16) that might already define these symbols.
-#if !compiler(>= 6.0)
-@available(macOS 26.0, *)
-extension View {
-    @ViewBuilder
-    func glassEffect<S: Shape>(in shape: S) -> some View { self }
-    
-    @ViewBuilder
-    func backgroundExtensionEffect() -> some View { self }
-}
-
-@available(macOS 26.0, *)
-extension PrimitiveButtonStyle where Self == DefaultButtonStyle {
-    static var glassProminent: DefaultButtonStyle { DefaultButtonStyle() }
-    static var glass: DefaultButtonStyle { DefaultButtonStyle() }
-}
-
-@available(macOS 26.0, *)
-extension Shape where Self == RoundedRectangle {
-    static func rect(cornerRadius: CGFloat) -> RoundedRectangle {
-        RoundedRectangle(cornerRadius: cornerRadius)
-    }
-}
-#endif
-
 // MARK: - Custom View Modifiers for consistent styling
 
 struct CardStyle: ViewModifier {
