@@ -21,6 +21,12 @@
 #import "PHTVManager.h"
 #import "../Utils/MJAccessibilityUtils.h"
 
+// Forward declarations for functions used before definition (inside extern "C" block)
+extern "C" {
+    NSString* getBundleIdFromPID(pid_t pid);
+    NSString* getFocusedAppBundleId(void);
+}
+
 #define FRONT_APP [[NSWorkspace sharedWorkspace] frontmostApplication].bundleIdentifier
 
 // Performance & Cache Configuration
@@ -1226,8 +1232,7 @@ extern "C" {
         NSLog(@"[RequestNewSession] Session reset complete");
         #endif
     }
-    
-    void RequestNewSession() {    
+
     NSString* ConvertUtil(NSString* str) {
         return [NSString stringWithUTF8String:convertUtil([str UTF8String]).c_str()];
     }
