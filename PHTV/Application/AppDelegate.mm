@@ -141,6 +141,9 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
 @property (nonatomic, assign) BOOL wasAccessibilityEnabled;
 @property (nonatomic, assign) NSUInteger accessibilityStableCount;
 
+// Track when user is granting permission (for force restart on return)
+@property (nonatomic, assign) BOOL waitingForPermissionGrant;
+
 // Health watchdog
 @property (nonatomic, strong) NSTimer *healthCheckTimer;
 @end
@@ -420,6 +423,11 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
     NSModalResponse res = [alert runModal];
 
     if (res == 1001) {
+        // CRITICAL: Set flag to indicate user is going to grant permission
+        // When user returns, we will force restart to apply TCC state
+        self.waitingForPermissionGrant = YES;
+        NSLog(@"[Accessibility] 🔑 User going to System Settings to grant permission");
+
         MJAccessibilityOpenPanel();
 
         // CRITICAL: Invalidate permission cache immediately
@@ -664,6 +672,10 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
 
         NSModalResponse response = [alert runModal];
         if (response == NSAlertFirstButtonReturn) {
+            // Set flag to force restart when user returns
+            self.waitingForPermissionGrant = YES;
+            NSLog(@"[Accessibility] 🔑 User going to System Settings to re-grant permission");
+
             MJAccessibilityOpenPanel();
 
             // CRITICAL: Invalidate permission cache
@@ -2369,17 +2381,55 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
         [self checkSendKeyStepByStepApp:activeApp.bundleIdentifier];
 
         // CRITICAL: When PHTV becomes active (user returning from System Settings),
-        // immediately check permission if we're waiting for it
-        // This enables instant detection when user grants permission and switches back
+        // check if user was granting permission and force restart to apply TCC state
         NSString *ourBundleId = [[NSBundle mainBundle] bundleIdentifier];
-        if ([activeApp.bundleIdentifier isEqualToString:ourBundleId] && !self.wasAccessibilityEnabled) {
-            NSLog(@"[Accessibility] 🔄 PHTV became active while waiting for permission - checking immediately");
-            // Invalidate cache and check permission immediately
-            [PHTVManager invalidatePermissionCache];
-            // Trigger immediate check on next run loop iteration
-            dispatch_async(dispatch_get_main_queue(), ^{
-                [self checkAccessibilityStatus];
-            });
+        if ([activeApp.bundleIdentifier isEqualToString:ourBundleId]) {
+
+            // CASE 1: User returning after clicking "Cấp quyền" - FORCE RESTART
+            // This is the most reliable way to apply TCC state for NEW users
+            if (self.waitingForPermissionGrant) {
+                NSLog(@"[Accessibility] 🔄 User returned from System Settings after granting permission");
+                self.waitingForPermissionGrant = NO;
+
+                // Invalidate cache and do a fresh check
+                [PHTVManager invalidatePermissionCache];
+
+                // Check if permission was actually granted
+                BOOL hasPermission = [PHTVManager canCreateEventTap];
+                NSLog(@"[Accessibility] Fresh permission check: %@", hasPermission ? @"GRANTED" : @"NOT YET");
+
+                if (hasPermission) {
+                    // Try to initialize event tap
+                    if (![PHTVManager isInited]) {
+                        if ([PHTVManager initEventTap]) {
+                            NSLog(@"[Accessibility] ✅ Event tap initialized successfully!");
+                            [self startAccessibilityMonitoring];
+                            [self startHealthCheckMonitoring];
+                            [self fillDataWithAnimation:YES];
+                            return;
+                        }
+                    }
+                }
+
+                // If we get here, either permission not granted or tap init failed
+                // Force restart to ensure TCC state is fully applied
+                NSLog(@"[Accessibility] 🔄 Force restarting to apply TCC state...");
+                dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+                    [self relaunchAppAfterPermissionGrant];
+                });
+                return;
+            }
+
+            // CASE 2: Normal permission check when app becomes active
+            if (!self.wasAccessibilityEnabled) {
+                NSLog(@"[Accessibility] 🔄 PHTV became active while waiting for permission - checking immediately");
+                // Invalidate cache and check permission immediately
+                [PHTVManager invalidatePermissionCache];
+                // Trigger immediate check on next run loop iteration
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    [self checkAccessibilityStatus];
+                });
+            }
         }
     }
 }

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.1] - 2026-01-09
+
+### Fixed
+- **Fix triệt để cho người dùng mới**: Sửa lỗi người dùng cài đặt lần đầu không nhận quyền trợ năng
+  - **Force Restart khi quay lại từ System Settings**: Khi user cấp quyền và quay lại app, tự động restart để áp dụng TCC state
+  - **Tracking Permission Grant State**: Theo dõi khi user đang trong quá trình cấp quyền để xử lý đúng
+  - **Đảm bảo TCC state được apply**: macOS yêu cầu restart app sau khi cấp quyền lần đầu, giờ được xử lý tự động
+
 ## [1.6.0] - 2026-01-09
 
 ### Fixed
