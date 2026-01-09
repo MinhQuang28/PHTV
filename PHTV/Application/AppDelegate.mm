@@ -435,27 +435,36 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
 }
 
 - (void)startAccessibilityMonitoring {
-    [self startAccessibilityMonitoringWithInterval:[self currentMonitoringInterval]];
+    [self startAccessibilityMonitoringWithInterval:[self currentMonitoringInterval] resetState:YES];
 }
 
 // Start monitoring with specific interval
 - (void)startAccessibilityMonitoringWithInterval:(NSTimeInterval)interval {
+    // Default: reset state (for backward compatibility)
+    [self startAccessibilityMonitoringWithInterval:interval resetState:YES];
+}
+
+// Start monitoring with specific interval, optionally resetting state
+- (void)startAccessibilityMonitoringWithInterval:(NSTimeInterval)interval resetState:(BOOL)resetState {
     // Stop existing timer if any
     [self stopAccessibilityMonitoring];
 
     // CRITICAL: Uses test event tap creation - ONLY reliable method (Apple recommended)
     // MJAccessibilityIsEnabled() returns TRUE even when permission is revoked!
-    // Dynamic interval: 1s when waiting for permission (fast detection), 5s when granted (low overhead)
+    // Dynamic interval: 0.3s when waiting for permission (fast detection), 5s when granted (low overhead)
     self.accessibilityMonitor = [NSTimer scheduledTimerWithTimeInterval:interval
                                                                   target:self
                                                                 selector:@selector(checkAccessibilityStatus)
                                                                 userInfo:nil
                                                                  repeats:YES];
 
-    // Set initial state using test tap (reliable)
-    self.wasAccessibilityEnabled = [PHTVManager canCreateEventTap];
+    // ONLY set initial state on first start, NOT when just changing interval
+    // This fixes the bug where permission grant detection fails because state is reset mid-check
+    if (resetState) {
+        self.wasAccessibilityEnabled = [PHTVManager canCreateEventTap];
+    }
 
-    NSLog(@"[Accessibility] Started monitoring via test event tap (interval: %.1fs)", interval);
+    NSLog(@"[Accessibility] Started monitoring via test event tap (interval: %.1fs, resetState: %@)", interval, resetState ? @"YES" : @"NO");
 }
 
 // Get appropriate monitoring interval based on current permission state
@@ -524,9 +533,10 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
         // IMPORTANT: Restart timer with appropriate interval based on new permission state
         // When permission granted: switch to 5s interval (low overhead)
         // When permission revoked: switch to 0.3s interval (instant re-detection)
+        // CRITICAL: resetState:NO to preserve wasAccessibilityEnabled for transition detection below
         NSTimeInterval newInterval = isEnabled ? 5.0 : 0.3;
         NSLog(@"[Accessibility] Adjusting monitoring interval to %.1fs", newInterval);
-        [self startAccessibilityMonitoringWithInterval:newInterval];
+        [self startAccessibilityMonitoringWithInterval:newInterval resetState:NO];
     }
 
     // Permission was just granted (transition from disabled to enabled)

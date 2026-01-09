@@ -153,98 +153,25 @@ extern Boolean AXIsProcessTrusted(void) __attribute__((weak_import));
     _axYesTapNoCount = 0;
 }
 
-// COMPREHENSIVE permission check using multiple methods with fallbacks
-// This is designed to work reliably on ALL macOS versions and device configurations:
-// 1. AXIsProcessTrusted() - updates IMMEDIATELY when permission is granted
-// 2. CGEventTapCreate test - RELIABLE for detecting permission revocation
-// 3. Multiple retry attempts - handles transient TCC cache issues
-// 4. Tracks AX=YES but Tap=NO state to detect when relaunch is needed
+// SIMPLE permission check using ONLY test event tap (Apple recommended)
+// This is the ONLY reliable way to check accessibility permission
+// AXIsProcessTrusted() is unreliable - it can return YES even when permission is not effective
 +(BOOL)canCreateEventTap {
     NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
 
-    // Update System Settings state for adaptive polling
-    [self updateSystemSettingsState];
-
     // Use DYNAMIC cache TTL based on current state
     // When waiting for permission (NO): NO CACHE - every check is fresh
-    // When System Settings is open: NO CACHE - user might be granting permission right now
-    // When permission granted and System Settings closed: use 5s TTL
-    NSTimeInterval cacheTTL;
-    if (!_lastPermissionCheckResult || _systemSettingsIsOpen) {
-        cacheTTL = 0;  // No cache when waiting or when System Settings is open
-    } else {
-        cacheTTL = kCacheTTLPermissionGranted;
-    }
+    // When permission granted: use 5s TTL to reduce overhead
+    NSTimeInterval cacheTTL = _lastPermissionCheckResult ? kCacheTTLPermissionGranted : kCacheTTLWaitingForPermission;
 
     if (cacheTTL > 0 && (now - _lastPermissionCheckTime < cacheTTL)) {
-        #ifdef DEBUG
-        NSLog(@"[Permission] Returning CACHED result: %@ (TTL: %.1fs)", _lastPermissionCheckResult ? @"HAS" : @"NO", cacheTTL);
-        #endif
         return _lastPermissionCheckResult;
     }
 
-    // METHOD 1: Check AXIsProcessTrusted() - this updates IMMEDIATELY when permission is granted
-    // It's unreliable for detecting revocation but FAST for detecting grant
-    BOOL axTrusted = NO;
-    if (AXIsProcessTrusted != NULL) {
-        axTrusted = AXIsProcessTrusted();
-    }
+    // ONLY trust test event tap creation - this is the ONLY reliable method
+    BOOL hasPermission = [self tryCreateTestTapWithRetries];
 
-    // METHOD 2: Test event tap creation with RETRIES
-    // This is reliable for detecting revocation but may be slow for grant detection
-    BOOL tapCreated = [self tryCreateTestTapWithRetries];
-
-    // Log current state
-    NSLog(@"[Permission] Check: AXIsProcessTrusted=%@ TestTap=%@ SystemSettings=%@",
-          axTrusted ? @"YES" : @"NO",
-          tapCreated ? @"YES" : @"NO",
-          _systemSettingsIsOpen ? @"OPEN" : @"closed");
-
-    // COMPREHENSIVE LOGIC with edge case handling:
-    BOOL hasPermission;
-
-    if (_lastPermissionCheckResult) {
-        // === WAS GRANTED BEFORE ===
-        // For revocation detection, only trust test tap
-        // AXIsProcessTrusted can return YES even after user removes app from list
-        hasPermission = tapCreated;
-
-        if (!hasPermission && axTrusted) {
-            NSLog(@"[Permission] ⚠️ AXIsProcessTrusted=YES but TestTap=NO - permission likely REVOKED");
-            _axYesTapNoCount = 0;  // Reset counter - this is revocation, not TCC cache issue
-        }
-    } else {
-        // === WAS DENIED BEFORE ===
-        // For grant detection, use OR logic: either method succeeding means permission granted
-        // This ensures fast detection regardless of macOS version or TCC cache state
-
-        if (tapCreated) {
-            // Test tap works - definitely have permission
-            hasPermission = YES;
-            _axYesTapNoCount = 0;
-        } else if (axTrusted) {
-            // AXIsProcessTrusted=YES but test tap failed
-            // This is the problematic case - TCC says YES but event tap won't work yet
-            // This usually means app needs to be relaunched for permission to take effect
-            hasPermission = YES;  // Trust AX for grant detection
-            _axYesTapNoCount++;
-
-            NSLog(@"[Permission] ✅ AXIsProcessTrusted=YES (TestTap not working yet) - count=%d", _axYesTapNoCount);
-
-            if (_axYesTapNoCount >= kMaxAxYesTapNoBeforeRelaunch) {
-                NSLog(@"[Permission] 🔄 Detected persistent AX=YES/Tap=NO state - app relaunch recommended");
-                // Post notification for UI to handle relaunch prompt
-                dispatch_async(dispatch_get_main_queue(), ^{
-                    [[NSNotificationCenter defaultCenter] postNotificationName:@"AccessibilityNeedsRelaunch"
-                                                                        object:nil];
-                });
-            }
-        } else {
-            // Both methods say NO - definitely no permission
-            hasPermission = NO;
-            _axYesTapNoCount = 0;
-        }
-    }
+    NSLog(@"[Permission] Check: TestTap=%@", hasPermission ? @"SUCCESS" : @"FAILED");
 
     // Update cache
     _lastPermissionCheckResult = hasPermission;

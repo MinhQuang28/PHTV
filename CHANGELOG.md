@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.4] - 2026-01-09
+
+### Fixed
+- **Sửa lỗi ứng dụng không tự khởi động lại khi cấp quyền**: Fix bug khiến app không tự động hoạt động sau khi user cấp quyền trợ năng
+  - **Root cause**: Khi permission status thay đổi, timer restart đặt lại `wasAccessibilityEnabled` TRƯỚC KHI code phát hiện transition chạy
+  - **Fix**: Thêm parameter `resetState:NO` khi restart timer để thay đổi interval, giữ nguyên state cho transition detection
+  - **Đơn giản hóa permission check**: Chỉ sử dụng test event tap (CGEventTapCreate) - phương pháp duy nhất đáng tin cậy theo Apple
+  - **Bỏ AXIsProcessTrusted()**: API này không đáng tin cậy - có thể trả về YES ngay cả khi permission không thực sự hoạt động
+
 ## [1.6.3] - 2026-01-09
 
 ### Fixed
