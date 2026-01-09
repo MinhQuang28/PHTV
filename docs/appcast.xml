@@ -28,7 +28,7 @@
         sparkle:version="33"
         sparkle:shortVersionString="1.5.7"
         sparkle:edSignature="slJ5kLJ/9ayXx0+ivfltkD2HTKL8r4B3wSUwnWYYpPJljxsauQRnLDvoxC92ZTXyvKeqW9PlGLXVCBYvp5RiDA=="
-        length="6054421"
+        length="6054465"
         type="application/octet-stream"/>
     <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
 </item>
@@ -48,7 +48,7 @@
         sparkle:version="31"
         sparkle:shortVersionString="1.5.6"
         sparkle:edSignature="slJ5kLJ/9ayXx0+ivfltkD2HTKL8r4B3wSUwnWYYpPJljxsauQRnLDvoxC92ZTXyvKeqW9PlGLXVCBYvp5RiDA=="
-        length="6054421"
+        length="6080820"
         type="application/octet-stream"/>
     <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
 </item>
