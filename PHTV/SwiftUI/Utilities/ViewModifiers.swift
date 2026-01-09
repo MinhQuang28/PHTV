@@ -8,11 +8,35 @@
 
 import SwiftUI
 
+// MARK: - Future Compatibility Shim (macOS 26.0)
+// These mocks allow the code to compile on GitHub Actions runners with older SDKs
+// while preserving the futuristic APIs for the user's local environment.
+#if !compiler(>= 26.0)
+extension View {
+    @ViewBuilder
+    func glassEffect<S: Shape>(in shape: S) -> some View { self }
+    
+    @ViewBuilder
+    func backgroundExtensionEffect() -> some View { self }
+}
+
+extension ButtonStyle where Self == DefaultButtonStyle {
+    static var glassProminent: DefaultButtonStyle { DefaultButtonStyle() }
+    static var glass: DefaultButtonStyle { DefaultButtonStyle() }
+}
+
+extension Shape where Self == RoundedRectangle {
+    static func rect(cornerRadius: CGFloat) -> RoundedRectangle {
+        RoundedRectangle(cornerRadius: cornerRadius)
+    }
+}
+#endif
+
 // MARK: - Custom View Modifiers for consistent styling
 
 struct CardStyle: ViewModifier {
     func body(content: Content) -> some View {
-        if #available(macOS 15.0, *) {
+        if #available(macOS 26.0, *) {
             content
                 .padding()
                 .background {
@@ -79,7 +103,7 @@ extension View {
         self
             .padding(6)
             .background {
-                if #available(macOS 15.0, *) {
+                if #available(macOS 26.0, *) {
                     RoundedRectangle(cornerRadius: 8)
                         .fill(.ultraThinMaterial)
                         .glassEffect(in: .rect(cornerRadius: 8))
@@ -100,7 +124,7 @@ extension View {
 /// Applies backgroundExtensionEffect on macOS 26+ to allow content to extend under the sidebar
 struct BackgroundExtensionModifier: ViewModifier {
     func body(content: Content) -> some View {
-        if #available(macOS 15.0, *) {
+        if #available(macOS 26.0, *) {
             content
                 .backgroundExtensionEffect()
         } else {
@@ -119,7 +143,7 @@ extension View {
 
 struct PrimaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
-        if #available(macOS 15.0, *) {
+        if #available(macOS 26.0, *) {
             configuration.label
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
@@ -138,7 +162,7 @@ struct PrimaryButtonStyle: ButtonStyle {
 
 struct SecondaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
-        if #available(macOS 15.0, *) {
+        if #available(macOS 26.0, *) {
             configuration.label
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
@@ -181,7 +205,7 @@ extension View {
     /// Applies glassProminent on macOS 26+, borderedProminent on older versions
     @ViewBuilder
     func adaptiveProminentButtonStyle() -> some View {
-        if #available(macOS 15.0, *) {
+        if #available(macOS 26.0, *) {
             self.buttonStyle(.glassProminent)
         } else {
             self.buttonStyle(.borderedProminent)
@@ -191,7 +215,7 @@ extension View {
     /// Applies glass on macOS 26+, bordered on older versions
     @ViewBuilder
     func adaptiveBorderedButtonStyle() -> some View {
-        if #available(macOS 15.0, *) {
+        if #available(macOS 26.0, *) {
             self.buttonStyle(.glass)
         } else {
             self.buttonStyle(.bordered)
