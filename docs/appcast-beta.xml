@@ -36,6 +36,26 @@
 
         <!-- Also include stable releases for fallback -->
         <item>
+    <title>PHTV 1.5.7</title>
+    <link>https://github.com/PhamHungTien/PHTV/releases/tag/v1.5.7</link>
+    <sparkle:version>33</sparkle:version>
+    <sparkle:shortVersionString>1.5.7</sparkle:shortVersionString>
+    <description><![CDATA[
+        <h2>PHTV 1.5.7</h2>
+        <p>Bản cập nhật ổn định mới nhất khắc phục các lỗi bảo mật quan trọng.</p>
+    ]]></description>
+    <pubDate>Fri, 09 Jan 2026 15:30:00 +0000</pubDate>
+    <enclosure
+        url="https://github.com/PhamHungTien/PHTV/releases/download/v1.5.7/PHTV-1.5.7.dmg"
+        sparkle:version="33"
+        sparkle:shortVersionString="1.5.7"
+        sparkle:edSignature="slJ5kLJ/9ayXx0+ivfltkD2HTKL8r4B3wSUwnWYYpPJljxsauQRnLDvoxC92ZTXyvKeqW9PlGLXVCBYvp5RiDA=="
+        length="6054465"
+        type="application/octet-stream"/>
+    <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+</item>
+
+        <item>
             <title>PHTV 1.2.4</title>
             <link>https://github.com/PhamHungTien/PHTV/releases/tag/v1.2.4</link>
             <sparkle:version>1.2.4</sparkle:version>
