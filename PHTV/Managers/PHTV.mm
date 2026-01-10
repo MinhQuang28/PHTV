@@ -1482,7 +1482,10 @@ extern "C" {
         CFRelease(_newEventDown);
         CFRelease(_newEventUp);
     }
-    
+
+    // Forward declarations for adaptive delay functions
+    uint64_t getAdaptiveDelay(uint64_t baseDelay, uint64_t maxDelay);
+
     void SendEmptyCharacter() {
         if (IS_DOUBLE_CODE(vCodeTable)) //VNI or Unicode Compound
             InsertKeyLength(1);
@@ -1506,12 +1509,11 @@ extern "C" {
         // BROWSER FIX: Add adaptive delay after empty character to ensure it's processed
         // before backspaces are sent. This prevents race conditions with autocomplete.
         NSString *effectiveBundleId = FRONT_APP ?: @"";
-        ApplicationCharacteristics appChars = GetApplicationCharacteristics(effectiveBundleId);
-        BOOL isBrowserApp = appChars.isBrowser;
+        BOOL isBrowserApp = [_browserAppSet containsObject:effectiveBundleId];
 
         if (isBrowserApp) {
             BOOL isSafari = [effectiveBundleId isEqualToString:@"com.apple.Safari"];
-            uint64_t emptyCharDelay = GetAdaptiveDelay(BROWSER_CHAR_DELAY_BASE_US, BROWSER_CHAR_DELAY_MAX_US);
+            uint64_t emptyCharDelay = getAdaptiveDelay(BROWSER_CHAR_DELAY_BASE_US, BROWSER_CHAR_DELAY_MAX_US);
 
             // Safari needs extra delay due to most aggressive autocomplete
             if (isSafari) {
@@ -1633,7 +1635,7 @@ extern "C" {
 
     // Calculate adaptive delay based on system load
     // Returns value between base and max based on measured response time
-    uint64_t GetAdaptiveDelay(uint64_t baseDelay, uint64_t maxDelay) {
+    uint64_t getAdaptiveDelay(uint64_t baseDelay, uint64_t maxDelay) {
         os_unfair_lock_lock(&_adaptiveDelayLock);
 
         uint64_t avgResponse = _averageResponseTimeUs;
@@ -1682,13 +1684,13 @@ extern "C" {
                 break;
             case DelayTypeBrowser:
                 // Adaptive delays for browsers
-                keystrokeDelay = GetAdaptiveDelay(BROWSER_KEYSTROKE_DELAY_BASE_US, BROWSER_KEYSTROKE_DELAY_MAX_US);
-                settleDelay = GetAdaptiveDelay(BROWSER_SETTLE_DELAY_BASE_US, BROWSER_SETTLE_DELAY_MAX_US);
+                keystrokeDelay = getAdaptiveDelay(BROWSER_KEYSTROKE_DELAY_BASE_US, BROWSER_KEYSTROKE_DELAY_MAX_US);
+                settleDelay = getAdaptiveDelay(BROWSER_SETTLE_DELAY_BASE_US, BROWSER_SETTLE_DELAY_MAX_US);
                 break;
             case DelayTypeSafariBrowser:
                 // Safari needs even longer delays due to aggressive autocomplete
-                keystrokeDelay = GetAdaptiveDelay(BROWSER_KEYSTROKE_DELAY_BASE_US, BROWSER_KEYSTROKE_DELAY_MAX_US) + SAFARI_ADDRESS_BAR_EXTRA_DELAY_US;
-                settleDelay = GetAdaptiveDelay(BROWSER_SETTLE_DELAY_BASE_US, BROWSER_SETTLE_DELAY_MAX_US) + SAFARI_ADDRESS_BAR_EXTRA_DELAY_US;
+                keystrokeDelay = getAdaptiveDelay(BROWSER_KEYSTROKE_DELAY_BASE_US, BROWSER_KEYSTROKE_DELAY_MAX_US) + SAFARI_ADDRESS_BAR_EXTRA_DELAY_US;
+                settleDelay = getAdaptiveDelay(BROWSER_SETTLE_DELAY_BASE_US, BROWSER_SETTLE_DELAY_MAX_US) + SAFARI_ADDRESS_BAR_EXTRA_DELAY_US;
                 break;
             default:
                 break;
@@ -3041,7 +3043,7 @@ extern "C" {
                             uint64_t charDelay = 0;
 
                             if (isBrowserApp) {
-                                charDelay = GetAdaptiveDelay(BROWSER_CHAR_DELAY_BASE_US, BROWSER_CHAR_DELAY_MAX_US);
+                                charDelay = getAdaptiveDelay(BROWSER_CHAR_DELAY_BASE_US, BROWSER_CHAR_DELAY_MAX_US);
                                 if (isSafari) {
                                     charDelay += SAFARI_ADDRESS_BAR_EXTRA_DELAY_US;
                                 }
@@ -3068,7 +3070,7 @@ extern "C" {
                             // CRITICAL FIX: ALL browser operations need delays to prevent autocomplete races
                             if (isBrowserApp) {
                                 BOOL isSafari = [effectiveBundleId isEqualToString:@"com.apple.Safari"];
-                                uint64_t finalDelay = GetAdaptiveDelay(BROWSER_CHAR_DELAY_BASE_US, BROWSER_CHAR_DELAY_MAX_US);
+                                uint64_t finalDelay = getAdaptiveDelay(BROWSER_CHAR_DELAY_BASE_US, BROWSER_CHAR_DELAY_MAX_US);
                                 if (isSafari) {
                                     finalDelay += SAFARI_ADDRESS_BAR_EXTRA_DELAY_US;
                                 }

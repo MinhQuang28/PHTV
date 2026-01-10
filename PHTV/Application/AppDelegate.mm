@@ -1945,7 +1945,7 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
                     // Common error codes and solutions
                     if ([error.domain isEqualToString:@"SMAppServiceErrorDomain"]) {
                         switch (error.code) {
-                            case 1: // kSMAppServiceErrorAlreadyRegistered
+                            case 1: { // kSMAppServiceErrorAlreadyRegistered
                                 NSLog(@"   → App already registered (stale state). Trying to unregister first...");
                                 [appService unregisterAndReturnError:nil];
                                 // Retry after brief delay
@@ -1958,17 +1958,21 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
                                     }
                                 });
                                 break;
-                            case 2: // kSMAppServiceErrorInvalidSignature
+                            }
+                            case 2: { // kSMAppServiceErrorInvalidSignature
                                 NSLog(@"   → Invalid code signature. App must be properly signed with Developer ID");
                                 NSLog(@"   → Ad-hoc signed apps (for development) are NOT supported by SMAppService");
                                 NSLog(@"   → Solution: Sign with Apple Developer ID certificate or use notarization");
                                 break;
-                            case 3: // kSMAppServiceErrorInvalidPlist
+                            }
+                            case 3: { // kSMAppServiceErrorInvalidPlist
                                 NSLog(@"   → Invalid Info.plist configuration");
                                 break;
-                            default:
+                            }
+                            default: {
                                 NSLog(@"   → Unknown SMAppService error");
                                 break;
+                            }
                         }
                     }
                 }
