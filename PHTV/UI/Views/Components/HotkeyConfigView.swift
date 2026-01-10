@@ -480,8 +480,8 @@ class KeyCaptureView: NSView {
 
         if error == noErr && length > 0 {
             let character = String(utf16CodeUnits: chars, count: length).uppercased()
-            // Filter out control characters and empty strings
-            if !character.isEmpty && character.unicodeScalars.first?.value ?? 0 >= 32 {
+            // Filter out control characters, empty strings, and whitespace (space key should use fallback)
+            if !character.isEmpty && !character.trimmingCharacters(in: .whitespaces).isEmpty && character.unicodeScalars.first?.value ?? 0 >= 32 {
                 return character
             }
         }
