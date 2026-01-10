@@ -112,8 +112,6 @@ open /Applications/PHTV.app
 
 <div align="center">
 
-<div align="center">
-
 ### Menu Bar & PHTV Picker
 
 <table>
