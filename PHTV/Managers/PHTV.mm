@@ -669,25 +669,73 @@ extern "C" {
     // These apps have their own address bar autocomplete/prediction that conflicts 
     // with Spotlight-style HID tap posting or AX API replacement.
     // They should be treated as normal apps (using CGEventTapPostEvent and SendEmptyCharacter).
-    NSSet* _browserAppSet = [NSSet setWithArray:@[@"com.apple.Safari",
-                                                   @"org.mozilla.firefox",
-                                                   @"com.google.Chrome",
-                                                   @"com.brave.Browser",
-                                                   @"com.visualkit.browser",  // Cốc Cốc
-                                                   @"com.coccoc.browser",     // Cốc Cốc (new)
-                                                   @"com.microsoft.edgemac",  // Edge Stable
-                                                   @"com.microsoft.edgemac.Dev",
-                                                   @"com.microsoft.edgemac.Beta",
-                                                   @"com.microsoft.Edge",  // Edge Stable (alternate)
-                                                   @"com.microsoft.Edge.Dev",
-                                                   @"com.thebrowser.Browser",  // Arc Browser
-                                                   @"company.thebrowser.dia",  // Dia Browser
-                                                   @"org.chromium.Chromium",  // Chromium
-                                                   @"com.vivaldi.Vivaldi",  // Vivaldi
-                                                   @"com.operasoftware.Opera", // Opera
-                                                   @"com.kagi.kagimacOS",     // Orion
-                                                   @"com.duckduckgo.macos.browser", // DuckDuckGo
-                                                   @"app.zen-browser.zen"]];  // Zen Browser (Firefox-based)
+    // BROWSER SET: All major browsers including Chromium-based variants
+    // This ensures browser input fixes (adaptive delays, empty character timing, etc.) apply universally
+    NSSet* _browserAppSet = [NSSet setWithArray:@[
+        // Safari (WebKit)
+        @"com.apple.Safari",
+        @"com.apple.SafariTechnologyPreview",  // Safari Technology Preview
+
+        // Firefox (Gecko)
+        @"org.mozilla.firefox",
+        @"org.mozilla.firefoxdeveloperedition",  // Firefox Developer Edition
+        @"org.mozilla.nightly",  // Firefox Nightly
+        @"app.zen-browser.zen",  // Zen Browser (Firefox-based)
+
+        // Chrome (all variants)
+        @"com.google.Chrome",
+        @"com.google.Chrome.canary",  // Chrome Canary
+        @"com.google.Chrome.dev",     // Chrome Dev
+        @"com.google.Chrome.beta",    // Chrome Beta
+
+        // Chromium-based browsers
+        @"org.chromium.Chromium",     // Pure Chromium
+        @"com.brave.Browser",         // Brave
+        @"com.brave.Browser.beta",    // Brave Beta
+        @"com.brave.Browser.nightly", // Brave Nightly
+
+        // Microsoft Edge (all variants)
+        @"com.microsoft.edgemac",      // Edge Stable
+        @"com.microsoft.edgemac.Dev",  // Edge Dev
+        @"com.microsoft.edgemac.Beta", // Edge Beta
+        @"com.microsoft.edgemac.Canary", // Edge Canary
+        @"com.microsoft.Edge",         // Edge Stable (alternate ID)
+        @"com.microsoft.Edge.Dev",     // Edge Dev (alternate ID)
+
+        // Arc Browser family
+        @"com.thebrowser.Browser",     // Arc Browser
+        @"company.thebrowser.dia",     // Dia Browser (Arc variant)
+
+        // Vietnamese browsers
+        @"com.visualkit.browser",      // Cốc Cốc (old)
+        @"com.coccoc.browser",         // Cốc Cốc (new)
+
+        // Other Chromium-based browsers
+        @"com.vivaldi.Vivaldi",        // Vivaldi
+        @"com.operasoftware.Opera",    // Opera
+        @"com.operasoftware.OperaGX",  // Opera GX
+        @"com.kagi.kagimacOS",         // Orion (WebKit + partial Chromium compat)
+        @"com.duckduckgo.macos.browser", // DuckDuckGo
+        @"com.sigmaos.sigmaos.macos",  // SigmaOS
+        @"com.pushplaylabs.sidekick",  // Sidekick Browser
+        @"com.bookry.wavebox",         // Wavebox
+        @"com.mighty.app",             // Mighty Browser
+        @"com.collovos.naver.whale",   // Naver Whale
+        @"ru.yandex.desktop.yandex-browser", // Yandex Browser
+
+        // Electron-based apps (Chromium engine)
+        // These apps use Chromium's text input system and need browser fixes
+        @"com.tinyspeck.slackmacgap",  // Slack
+        @"com.hnc.Discord",            // Discord
+        @"com.electron.discord",       // Discord (alternate)
+        @"com.microsoft.VSCode",       // VS Code
+        @"com.github.GitHubClient",    // GitHub Desktop
+        @"com.figma.Desktop",          // Figma
+        @"notion.id",                  // Notion
+        @"com.linear",                 // Linear
+        @"com.logseq.logseq",          // Logseq
+        @"md.obsidian",                // Obsidian
+    ]];
 
     // Apps that need to FORCE Unicode precomposed (not compound) - Using NSSet for O(1) lookup performance
     // These apps don't handle Unicode combining characters properly

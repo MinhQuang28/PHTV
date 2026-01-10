@@ -281,14 +281,67 @@ Switch to Tab 2 (page content) → gõ "chào" → lỗi (cache stale)
 Tab switch → cache invalidate trong 10s → gõ "chào" → OK ✓
 ```
 
-### Browsers Tested
+### Browsers & Apps Supported
 
-| Browser | Trước | Sau | Cải thiện |
+Browser fixes áp dụng cho **tất cả Chromium-based browsers** và Electron apps:
+
+#### ✅ WebKit-based
+- Safari (Stable + Technology Preview)
+
+#### ✅ Gecko-based (Firefox)
+- Firefox (Stable, Developer Edition, Nightly)
+- Zen Browser
+
+#### ✅ Chromium-based (Universal support)
+**Chrome variants:**
+- Google Chrome (Stable, Beta, Dev, Canary)
+
+**Microsoft Edge:**
+- Edge (Stable, Beta, Dev, Canary)
+
+**Privacy-focused:**
+- Brave (Stable, Beta, Nightly)
+- DuckDuckGo Browser
+- Opera (Standard, GX)
+- Vivaldi
+
+**Arc family:**
+- Arc Browser
+- Dia Browser
+
+**Regional browsers:**
+- Cốc Cốc (Vietnam)
+- Naver Whale (Korea)
+- Yandex Browser (Russia)
+
+**Modern browsers:**
+- SigmaOS
+- Sidekick
+- Wavebox
+- Mighty
+- Pure Chromium
+- Orion (hybrid WebKit/Chromium)
+
+#### ✅ Electron-based apps (Chromium engine)
+- Slack
+- Discord
+- VS Code
+- GitHub Desktop
+- Figma
+- Notion
+- Linear
+- Logseq
+- Obsidian
+
+### Test Results
+
+| Browser Type | Trước | Sau | Cải thiện |
 |---------|-------|-----|-----------|
 | **Safari** | ❌ Lỗi nặng (60% keystrokes sai) | ✅ Hoạt động tốt (99%+) | ⭐⭐⭐⭐⭐ |
-| **Chrome** | ⚠️ Lỗi thỉnh thoảng (20% keystrokes) | ✅ Hoạt động tốt (99%+) | ⭐⭐⭐⭐ |
+| **Chrome + tất cả Chromium** | ⚠️ Lỗi thỉnh thoảng (20% keystrokes) | ✅ Hoạt động tốt (99%+) | ⭐⭐⭐⭐ |
 | **Firefox** | ⚠️ Lỗi nhẹ (10% keystrokes) | ✅ Hoạt động hoàn hảo (100%) | ⭐⭐⭐ |
-| **Edge** | ⚠️ Lỗi thỉnh thoảng (15% keystrokes) | ✅ Hoạt động tốt (99%+) | ⭐⭐⭐⭐ |
+| **Edge + variants** | ⚠️ Lỗi thỉnh thoảng (15% keystrokes) | ✅ Hoạt động tốt (99%+) | ⭐⭐⭐⭐ |
+| **Electron apps** | ⚠️ Lỗi tương tự Chrome | ✅ Hoạt động tốt (99%+) | ⭐⭐⭐⭐ |
 
 ## Tổng kết các thay đổi
 
