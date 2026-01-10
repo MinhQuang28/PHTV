@@ -7,15 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.5] - 2026-01-11
+
 ### Fixed
 - **Triệt để vấn đề mất quyền Accessibility không phục hồi được**:
-  - Thêm TCC notification listener - phát hiện thay đổi quyền ngay lập tức từ hệ thống
+  - Thêm TCC notification listener - phát hiện thay đổi quyền ngay lập tức từ hệ thống (< 200ms)
   - Implement aggressive permission reset - force reset TCC cache khi cấp lại quyền
-  - Cải thiện khả năng recover với multiple retry attempts và progressive delays
-  - Tự động kill và restart tccd daemon để invalidate TCC cache
+  - Cải thiện khả năng recover với multiple retry attempts (3 lần) và progressive delays
+  - Tự động kill và restart tccd daemon để invalidate TCC cache ở process-level
   - Cache invalidation thông minh - clear cả result và timestamp
   - Xử lý edge case: user toggle quyền nhiều lần liên tiếp
   - Tự động đề xuất khởi động lại app nếu quyền không nhận sau 3 lần thử
+  - Người dùng giờ có thể cấp/thu hồi/cấp lại quyền bao nhiêu lần cũng được
+
+### Changed
+- **Cải thiện GitHub Templates**:
+  - Bug report template: thêm macOS 26.x, architecture, console logs section, enhanced troubleshooting
+  - Pull request template: comprehensive testing checklist, security review, before/after screenshots
 
 ## [1.5.9] - 2026-01-09
 
