@@ -210,10 +210,9 @@ open https://github.com/PhamHungTien/PHTV/releases/latest
 ```
 
 > [!WARNING]
-> **Không mở được ứng dụng?** Nếu macOS báo lỗi "damaged" hoặc "can't be opened", mở Terminal và chạy:
-> ```
-> xattr -cr /Applications/PHTV.app
-> ```
+> **Không mở được ứng dụng?** Nếu macOS báo lỗi "damaged", "can't be opened", hoặc tự động xóa app, xem hướng dẫn:
+> - **[Khắc phục lỗi Malware Warning](docs/FIX_MACOS_MALWARE_WARNING.md)** - Giải pháp triệt để
+> - **Tạm thời**: Chạy `./scripts/quick_fix_gatekeeper.sh /Applications/PHTV.app`
 
 ### Build từ source
 
