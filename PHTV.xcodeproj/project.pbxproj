@@ -30,6 +30,13 @@
 		46394F5A2EFA5D56009D5194 /* EnglishWordDetector.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 46394F592EFA5D56009D5194 /* EnglishWordDetector.cpp */; };
 		46394F822EFAC18E009D5194 /* vi_dict.bin in Resources */ = {isa = PBXBuildFile; fileRef = 46394F812EFAC18E009D5194 /* vi_dict.bin */; };
 		46394F832EFAC18E009D5194 /* en_dict.bin in Resources */ = {isa = PBXBuildFile; fileRef = 46394F802EFAC18E009D5194 /* en_dict.bin */; };
+		46394F7E2EFAC18E009D5194 /* en_words.txt in Resources */ = {isa = PBXBuildFile; fileRef = 46394F7F2EFAC18E009D5194 /* en_words.txt */; };
+		46394FA02EFAC18F009D5194 /* icon.png in Resources */ = {isa = PBXBuildFile; fileRef = 46394F902EFAC18F009D5194 /* icon.png */; };
+		46394FA12EFAC18F009D5194 /* menubar_ui.png in Resources */ = {isa = PBXBuildFile; fileRef = 46394F912EFAC18F009D5194 /* menubar_ui.png */; };
+		46394FA22EFAC18F009D5194 /* PHTV_Picker_1_Emoji.png in Resources */ = {isa = PBXBuildFile; fileRef = 46394F922EFAC18F009D5194 /* PHTV_Picker_1_Emoji.png */; };
+		46394FA32EFAC18F009D5194 /* PHTV_Picker_2_GIF.png in Resources */ = {isa = PBXBuildFile; fileRef = 46394F932EFAC18F009D5194 /* PHTV_Picker_2_GIF.png */; };
+		46394FA42EFAC18F009D5194 /* PHTV_Picker_3_Sticker.png in Resources */ = {isa = PBXBuildFile; fileRef = 46394F942EFAC18F009D5194 /* PHTV_Picker_3_Sticker.png */; };
+		46394FA52EFAC190009D5194 /* Main.strings in Resources */ = {isa = PBXBuildFile; fileRef = 46394F952EFAC190009D5194 /* Main.strings */; };
 		46394F852EFC8C7B009D5194 /* PHTVLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46394F842EFC8C7B009D5194 /* PHTVLogger.swift */; };
 		46394F862EFC8C7B009D5195 /* ClaudeCodePatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46394F872EFC8C7B009D5195 /* ClaudeCodePatcher.swift */; };
 		46413AEE2EEF7EB300278BFB /* update.json in Resources */ = {isa = PBXBuildFile; fileRef = 46413AED2EEF7EB300278BFB /* update.json */; };
@@ -116,9 +123,17 @@
 		23F512842336386200397988 /* MJAccessibilityUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MJAccessibilityUtils.h; sourceTree = "<group>"; };
 		3B27EBB488B64D6C48DE34C7 /* PHSilentUserDriver.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = PHSilentUserDriver.h; sourceTree = "<group>"; };
 		461048612EF2DF22005AF5FC /* SendKeyStepByStepAppsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SendKeyStepByStepAppsView.swift; sourceTree = "<group>"; };
+		46394F582EFA5D56009D5194 /* EnglishWordDetector.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = EnglishWordDetector.h; sourceTree = "<group>"; };
 		46394F592EFA5D56009D5194 /* EnglishWordDetector.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = EnglishWordDetector.cpp; sourceTree = "<group>"; };
+		46394F7F2EFAC18E009D5194 /* en_words.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = en_words.txt; sourceTree = "<group>"; };
 		46394F802EFAC18E009D5194 /* en_dict.bin */ = {isa = PBXFileReference; lastKnownFileType = archive.macbinary; path = en_dict.bin; sourceTree = "<group>"; };
 		46394F812EFAC18E009D5194 /* vi_dict.bin */ = {isa = PBXFileReference; lastKnownFileType = archive.macbinary; path = vi_dict.bin; sourceTree = "<group>"; };
+		46394F902EFAC18F009D5194 /* icon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = icon.png; sourceTree = "<group>"; };
+		46394F912EFAC18F009D5194 /* menubar_ui.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = menubar_ui.png; sourceTree = "<group>"; };
+		46394F922EFAC18F009D5194 /* PHTV_Picker_1_Emoji.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = PHTV_Picker_1_Emoji.png; sourceTree = "<group>"; };
+		46394F932EFAC18F009D5194 /* PHTV_Picker_2_GIF.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = PHTV_Picker_2_GIF.png; sourceTree = "<group>"; };
+		46394F942EFAC18F009D5194 /* PHTV_Picker_3_Sticker.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = PHTV_Picker_3_Sticker.png; sourceTree = "<group>"; };
+		46394F952EFAC190009D5194 /* Main.strings */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; path = Main.strings; sourceTree = "<group>"; };
 		46394F842EFC8C7B009D5194 /* PHTVLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PHTVLogger.swift; sourceTree = "<group>"; };
 		46394F872EFC8C7B009D5195 /* ClaudeCodePatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeCodePatcher.swift; sourceTree = "<group>"; };
 		46413AED2EEF7EB300278BFB /* update.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = update.json; sourceTree = "<group>"; };
@@ -232,6 +247,7 @@
 		23E2E4932314FD3A006CCC3E /* Engine */ = {
 			isa = PBXGroup;
 			children = (
+				46394F582EFA5D56009D5194 /* EnglishWordDetector.h */,
 				46394F592EFA5D56009D5194 /* EnglishWordDetector.cpp */,
 				23E2E4962314FD3A006CCC3E /* DataType.h */,
 				23E2E4942314FD3A006CCC3E /* Engine.h */,
@@ -253,8 +269,25 @@
 			children = (
 				46394F6E2EFA5E8F009D5195 /* Dictionaries */,
 				46394F6F2EFA5E8F009D5196 /* Images */,
+				46394F962EFAC191009D5194 /* Localization */,
 			);
 			path = Resources;
+			sourceTree = "<group>";
+		};
+		46394F962EFAC191009D5194 /* Localization */ = {
+			isa = PBXGroup;
+			children = (
+				46394F972EFAC191009D5195 /* vi-VN.lproj */,
+			);
+			path = Localization;
+			sourceTree = "<group>";
+		};
+		46394F972EFAC191009D5195 /* vi-VN.lproj */ = {
+			isa = PBXGroup;
+			children = (
+				46394F952EFAC190009D5194 /* Main.strings */,
+			);
+			path = "vi-VN.lproj";
 			sourceTree = "<group>";
 		};
 		46394F6E2EFA5E8F009D5195 /* Dictionaries */ = {
@@ -262,6 +295,7 @@
 			children = (
 				46394F802EFAC18E009D5194 /* en_dict.bin */,
 				46394F812EFAC18E009D5194 /* vi_dict.bin */,
+				46394F7F2EFAC18E009D5194 /* en_words.txt */,
 			);
 			path = Dictionaries;
 			sourceTree = "<group>";
@@ -269,6 +303,11 @@
 		46394F6F2EFA5E8F009D5196 /* Images */ = {
 			isa = PBXGroup;
 			children = (
+				46394F902EFAC18F009D5194 /* icon.png */,
+				46394F912EFAC18F009D5194 /* menubar_ui.png */,
+				46394F922EFAC18F009D5194 /* PHTV_Picker_1_Emoji.png */,
+				46394F932EFAC18F009D5194 /* PHTV_Picker_2_GIF.png */,
+				46394F942EFAC18F009D5194 /* PHTV_Picker_3_Sticker.png */,
 			);
 			path = Images;
 			sourceTree = "<group>";
@@ -497,6 +536,13 @@
 				232EDA5E21F1B33F0085D362 /* Assets.xcassets in Resources */,
 				46394F822EFAC18E009D5194 /* vi_dict.bin in Resources */,
 				46394F832EFAC18E009D5194 /* en_dict.bin in Resources */,
+				46394F7E2EFAC18E009D5194 /* en_words.txt in Resources */,
+				46394FA02EFAC18F009D5194 /* icon.png in Resources */,
+				46394FA12EFAC18F009D5194 /* menubar_ui.png in Resources */,
+				46394FA22EFAC18F009D5194 /* PHTV_Picker_1_Emoji.png in Resources */,
+				46394FA32EFAC18F009D5194 /* PHTV_Picker_2_GIF.png in Resources */,
+				46394FA42EFAC18F009D5194 /* PHTV_Picker_3_Sticker.png in Resources */,
+				46394FA52EFAC190009D5194 /* Main.strings in Resources */,
 				46413AEE2EEF7EB300278BFB /* update.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
