@@ -46,10 +46,22 @@ static const uint64_t SPOTLIGHT_TINY_DELAY_US = 2000;        // Spotlight timing
 
 // Browser Delay Configuration - browsers (Chromium, Safari, Firefox) need longer delays
 // These delays ensure stable Vietnamese input in browser address bars and text fields
-// Values are set conservatively high for 100% reliability across all system loads
-static const uint64_t BROWSER_KEYSTROKE_DELAY_US = 4000;     // Per-backspace delay for browsers
-static const uint64_t BROWSER_SETTLE_DELAY_US = 10000;       // After all backspaces for browsers
-static const uint64_t BROWSER_CHAR_DELAY_US = 3500;          // Delay between characters for browsers
+// ADAPTIVE DELAYS: Base values + dynamic adjustment based on system response time
+static const uint64_t BROWSER_KEYSTROKE_DELAY_BASE_US = 4000;     // Base per-backspace delay for browsers
+static const uint64_t BROWSER_KEYSTROKE_DELAY_MAX_US = 8000;      // Max per-backspace delay under high load
+static const uint64_t BROWSER_SETTLE_DELAY_BASE_US = 10000;       // Base settle delay after all backspaces
+static const uint64_t BROWSER_SETTLE_DELAY_MAX_US = 18000;        // Max settle delay under high load
+static const uint64_t BROWSER_CHAR_DELAY_BASE_US = 3500;          // Base delay between characters
+static const uint64_t BROWSER_CHAR_DELAY_MAX_US = 6000;           // Max delay between characters under high load
+
+// Safari-specific: Extra delays for Safari address bar (most problematic)
+static const uint64_t SAFARI_ADDRESS_BAR_EXTRA_DELAY_US = 2000;   // Additional delay for Safari address bar
+
+// Adaptive delay tracking
+static uint64_t _lastKeystrokeTimestamp = 0;
+static uint64_t _averageResponseTimeUs = 0;
+static NSUInteger _responseTimeSamples = 0;
+static os_unfair_lock _adaptiveDelayLock = OS_UNFAIR_LOCK_INIT;
 
 // AXValueType constant name differs across SDK versions.
 #if defined(kAXValueTypeCFRange)
@@ -749,8 +761,9 @@ extern "C" {
             _appCharacteristicsCache = [NSMutableDictionary dictionaryWithCapacity:32];
         }
 
-        // CRITICAL FIX: Invalidate cache on app switch or periodically (every 30s)
-        // This fixes WhatsApp and other apps that sometimes stop working
+        // CRITICAL FIX: Invalidate cache on app switch or periodically
+        // Reduced from 30s to 10s for better browser detection responsiveness
+        // This fixes WhatsApp and browser issues where behavior changes dynamically
         uint64_t now = mach_absolute_time();
         static mach_timebase_info_data_t timebase;
         if (timebase.denom == 0) {
@@ -768,12 +781,14 @@ extern "C" {
             #endif
         }
 
-        // Invalidate every 30 seconds as safety net
-        if (nowMs - _lastCacheInvalidationTime > 30000) {
+        // BROWSER FIX: Invalidate every 10 seconds (reduced from 30s)
+        // Browsers change behavior dynamically (search bar vs page content, tab switches)
+        // Faster invalidation ensures adaptive delays respond to current context
+        if (nowMs - _lastCacheInvalidationTime > 10000) {
             shouldInvalidate = YES;
             _lastCacheInvalidationTime = nowMs;
             #ifdef DEBUG
-            NSLog(@"[Cache] 30s elapsed, invalidating cache");
+            NSLog(@"[Cache] 10s elapsed, invalidating cache for browser responsiveness");
             #endif
         }
 
@@ -1471,12 +1486,12 @@ extern "C" {
     void SendEmptyCharacter() {
         if (IS_DOUBLE_CODE(vCodeTable)) //VNI or Unicode Compound
             InsertKeyLength(1);
-        
+
         _newChar = 0x202F; //empty char
         if ([_niceSpaceAppSet containsObject:FRONT_APP]) {
             _newChar = 0x200C; //Unicode character with empty space
         }
-        
+
         _newEventDown = CGEventCreateKeyboardEvent(myEventSource, 0, true);
         _newEventUp = CGEventCreateKeyboardEvent(myEventSource, 0, false);
         ApplyKeyboardTypeAndFlags(_newEventDown, _newEventUp);
@@ -1487,6 +1502,26 @@ extern "C" {
         if (_phtvPostToHIDTap) SpotlightTinyDelay();
         CFRelease(_newEventDown);
         CFRelease(_newEventUp);
+
+        // BROWSER FIX: Add adaptive delay after empty character to ensure it's processed
+        // before backspaces are sent. This prevents race conditions with autocomplete.
+        NSString *effectiveBundleId = FRONT_APP ?: @"";
+        ApplicationCharacteristics appChars = GetApplicationCharacteristics(effectiveBundleId);
+        BOOL isBrowserApp = appChars.isBrowser;
+
+        if (isBrowserApp) {
+            BOOL isSafari = [effectiveBundleId isEqualToString:@"com.apple.Safari"];
+            uint64_t emptyCharDelay = GetAdaptiveDelay(BROWSER_CHAR_DELAY_BASE_US, BROWSER_CHAR_DELAY_MAX_US);
+
+            // Safari needs extra delay due to most aggressive autocomplete
+            if (isSafari) {
+                emptyCharDelay += SAFARI_ADDRESS_BAR_EXTRA_DELAY_US;
+            }
+
+            if (emptyCharDelay > 0) {
+                usleep((useconds_t)emptyCharDelay);
+            }
+        }
     }
     
     void SendVirtualKey(const Byte& vKey) {
@@ -1562,11 +1597,78 @@ extern "C" {
     typedef enum {
         DelayTypeNone = 0,
         DelayTypeTerminal = 1,
-        DelayTypeBrowser = 2
+        DelayTypeBrowser = 2,
+        DelayTypeSafariBrowser = 3  // Safari with extra delays
     } DelayType;
 
+    // Update response time tracking for adaptive delays
+    // Call this after each keystroke to measure system responsiveness
+    void UpdateResponseTimeTracking() {
+        uint64_t now = mach_absolute_time();
+
+        os_unfair_lock_lock(&_adaptiveDelayLock);
+
+        if (_lastKeystrokeTimestamp > 0) {
+            uint64_t responseTime = mach_time_to_ms(now - _lastKeystrokeTimestamp) * 1000; // Convert to microseconds
+
+            // Exponential moving average: 80% old + 20% new
+            if (_responseTimeSamples == 0) {
+                _averageResponseTimeUs = responseTime;
+            } else {
+                _averageResponseTimeUs = (_averageResponseTimeUs * 4 + responseTime) / 5;
+            }
+
+            _responseTimeSamples++;
+
+            // Cap at 100 samples to prevent overflow
+            if (_responseTimeSamples > 100) {
+                _responseTimeSamples = 50; // Reset but keep some history
+            }
+        }
+
+        _lastKeystrokeTimestamp = now;
+
+        os_unfair_lock_unlock(&_adaptiveDelayLock);
+    }
+
+    // Calculate adaptive delay based on system load
+    // Returns value between base and max based on measured response time
+    uint64_t GetAdaptiveDelay(uint64_t baseDelay, uint64_t maxDelay) {
+        os_unfair_lock_lock(&_adaptiveDelayLock);
+
+        uint64_t avgResponse = _averageResponseTimeUs;
+        NSUInteger samples = _responseTimeSamples;
+
+        os_unfair_lock_unlock(&_adaptiveDelayLock);
+
+        // Need at least 3 samples for adaptive behavior
+        if (samples < 3) {
+            return baseDelay;
+        }
+
+        // Adaptive scaling: if response time > 2x base delay, scale up
+        // Example: If avgResponse=8ms and base=4ms, scale factor = 2.0
+        double scaleFactor = 1.0;
+        if (avgResponse > baseDelay * 2) {
+            scaleFactor = (double)avgResponse / (double)baseDelay;
+            scaleFactor = fmin(scaleFactor, 2.0); // Cap at 2x
+        }
+
+        uint64_t adaptiveDelay = (uint64_t)(baseDelay * scaleFactor);
+
+        // Clamp between base and max
+        if (adaptiveDelay < baseDelay) {
+            return baseDelay;
+        }
+        if (adaptiveDelay > maxDelay) {
+            return maxDelay;
+        }
+
+        return adaptiveDelay;
+    }
+
     // Consolidated helper function to send multiple backspaces with app-specific delays
-    // This reduces code duplication across the codebase
+    // IMPROVED: Now supports adaptive delays and Safari-specific handling
     void SendBackspaceSequenceWithDelay(int count, DelayType delayType) {
         if (count <= 0) return;
 
@@ -1579,8 +1681,14 @@ extern "C" {
                 settleDelay = TERMINAL_SETTLE_DELAY_US;
                 break;
             case DelayTypeBrowser:
-                keystrokeDelay = BROWSER_KEYSTROKE_DELAY_US;
-                settleDelay = BROWSER_SETTLE_DELAY_US;
+                // Adaptive delays for browsers
+                keystrokeDelay = GetAdaptiveDelay(BROWSER_KEYSTROKE_DELAY_BASE_US, BROWSER_KEYSTROKE_DELAY_MAX_US);
+                settleDelay = GetAdaptiveDelay(BROWSER_SETTLE_DELAY_BASE_US, BROWSER_SETTLE_DELAY_MAX_US);
+                break;
+            case DelayTypeSafariBrowser:
+                // Safari needs even longer delays due to aggressive autocomplete
+                keystrokeDelay = GetAdaptiveDelay(BROWSER_KEYSTROKE_DELAY_BASE_US, BROWSER_KEYSTROKE_DELAY_MAX_US) + SAFARI_ADDRESS_BAR_EXTRA_DELAY_US;
+                settleDelay = GetAdaptiveDelay(BROWSER_SETTLE_DELAY_BASE_US, BROWSER_SETTLE_DELAY_MAX_US) + SAFARI_ADDRESS_BAR_EXTRA_DELAY_US;
                 break;
             default:
                 break;
@@ -2233,16 +2341,18 @@ extern "C" {
     // Event tap health monitoring - checks tap status and recovers if needed
     // Returns YES if tap is healthy, NO if recovery was attempted
     static inline BOOL CheckAndRecoverEventTap(void) {
-        // Aggressive inline health check every 25 events for near-instant recovery
+        // BROWSER FIX: More aggressive health check for faster recovery
+        // Reduced intervals to catch tap disable within 5-10 keystrokes instead of 15-50
         // Smart skip: after 1000 healthy checks, reduce frequency to save CPU
         static NSUInteger eventCounter = 0;
         static NSUInteger recoveryCounter = 0;
         static NSUInteger healthyCounter = 0;
 
-        // IMPROVED: More aggressive checking to catch tap disable faster
-        // Max 50 events when healthy (was 100), 15 when recovering (was 25)
-        // This reduces detection latency from 100 keystrokes to 50
-        NSUInteger checkInterval = (healthyCounter > 1000) ? 50 : 15;
+        // IMPROVED: Much more aggressive checking for browser responsiveness
+        // 10 events when healthy and established (was 50)
+        // 5 events when recovering or initial state (was 15)
+        // This reduces detection latency from 50 keystrokes to 5-10
+        NSUInteger checkInterval = (healthyCounter > 1000) ? 10 : 5;
 
         if (__builtin_expect(++eventCounter % checkInterval == 0, 0)) {
             if (__builtin_expect(![PHTVManager isEventTapEnabled], 0)) {
@@ -2888,8 +2998,11 @@ extern "C" {
                         // Use browser-specific delays for browser apps, terminal delays for terminals
                         // CRITICAL FIX: ALL browser operations need delays, not just Auto English
                         // Without delays, browser autocomplete races with backspace events causing duplicates
+                        // SAFARI FIX: Safari needs extra delays due to most aggressive autocomplete
                         if (isBrowserApp) {
-                            SendBackspaceSequenceWithDelay(pData->backspaceCount, DelayTypeBrowser);
+                            BOOL isSafari = [effectiveBundleId isEqualToString:@"com.apple.Safari"];
+                            DelayType browserDelayType = isSafari ? DelayTypeSafariBrowser : DelayTypeBrowser;
+                            SendBackspaceSequenceWithDelay(pData->backspaceCount, browserDelayType);
                         } else if (appChars.needsStepByStep) {
                             SendBackspaceSequenceWithDelay(pData->backspaceCount, DelayTypeTerminal);
                         } else {
@@ -2923,12 +3036,23 @@ extern "C" {
                         SendNewCharString();
                     } else {
                         if (pData->newCharCount > 0 && pData->newCharCount <= MAX_BUFF) {
+                            // SAFARI FIX: Calculate adaptive delays for Safari
+                            BOOL isSafari = [effectiveBundleId isEqualToString:@"com.apple.Safari"];
+                            uint64_t charDelay = 0;
+
+                            if (isBrowserApp) {
+                                charDelay = GetAdaptiveDelay(BROWSER_CHAR_DELAY_BASE_US, BROWSER_CHAR_DELAY_MAX_US);
+                                if (isSafari) {
+                                    charDelay += SAFARI_ADDRESS_BAR_EXTRA_DELAY_US;
+                                }
+                            }
+
                             for (int i = pData->newCharCount - 1; i >= 0; i--) {
                                 SendKeyCode(pData->charData[i]);
-                                // Add delay between characters for browser apps to ensure stable input
+                                // Add adaptive delay between characters for browser apps
                                 // CRITICAL FIX: ALL browser operations need delays to prevent autocomplete races
-                                if (isBrowserApp && i > 0) {
-                                    usleep(BROWSER_CHAR_DELAY_US);
+                                if (isBrowserApp && i > 0 && charDelay > 0) {
+                                    usleep((useconds_t)charDelay);
                                 }
                             }
                         }
@@ -2940,10 +3064,15 @@ extern "C" {
                                 fflush(stderr);
                             }
                             #endif
-                            // Add delay before final key for browsers
+                            // Add adaptive delay before final key for browsers
                             // CRITICAL FIX: ALL browser operations need delays to prevent autocomplete races
                             if (isBrowserApp) {
-                                usleep(BROWSER_CHAR_DELAY_US);
+                                BOOL isSafari = [effectiveBundleId isEqualToString:@"com.apple.Safari"];
+                                uint64_t finalDelay = GetAdaptiveDelay(BROWSER_CHAR_DELAY_BASE_US, BROWSER_CHAR_DELAY_MAX_US);
+                                if (isSafari) {
+                                    finalDelay += SAFARI_ADDRESS_BAR_EXTRA_DELAY_US;
+                                }
+                                usleep((useconds_t)finalDelay);
                             }
                             SendKeyCode(_keycode | ((_flag & kCGEventFlagMaskAlphaShift) || (_flag & kCGEventFlagMaskShift) ? CAPS_MASK : 0));
                         }
@@ -2955,6 +3084,10 @@ extern "C" {
             } else if (pData->code == vReplaceMaro) { //MACRO
                 handleMacro();
             }
+
+            // Update response time tracking for adaptive delays
+            // Measure how long it takes for system to process keystrokes
+            UpdateResponseTimeTracking();
 
             return NULL;
         }
