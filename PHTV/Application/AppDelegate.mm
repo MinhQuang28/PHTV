@@ -880,6 +880,12 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
     // Observe Dark Mode changes
     [self observeAppearanceChanges];
     
+    // Check binary integrity on startup (detect CleanMyMac modifications)
+    BOOL binaryIntact = [PHTVManager checkBinaryIntegrity];
+    if (!binaryIntact) {
+        NSLog(@"⚠️⚠️⚠️ [AppDelegate] Binary integrity check FAILED - may cause permission issues");
+    }
+
     // Start TCC notification listener immediately (works even without permission)
     [PHTVManager startTCCNotificationListener];
     NSLog(@"[TCC] Notification listener started at app launch");

@@ -63,6 +63,12 @@
 +(void)setSafeModeEnabled:(BOOL)enabled;
 +(void)clearAXTestFlag;  // Call on normal app termination
 
+// Binary integrity check - Detects if CleanMyMac or similar tools modified the app
++(BOOL)checkBinaryIntegrity;  // Returns YES if binary is intact (Universal or properly signed)
++(NSString*)getBinaryArchitectures;  // Returns architecture info (e.g., "arm64 + x86_64" or "arm64 only")
++(NSString*)getBinaryHash;  // Returns SHA-256 hash of executable for tracking changes
++(BOOL)hasBinaryChangedSinceLastRun;  // Detects if binary was modified between app runs
+
 @end
 
 #endif /* PHTVManager_h */

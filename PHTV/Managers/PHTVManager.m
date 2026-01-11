@@ -7,6 +7,7 @@
 //
 
 #import "PHTVManager.h"
+#import "PHTVBinaryIntegrity.h"
 
 extern void PHTVInit(void);
 
@@ -575,6 +576,25 @@ extern Boolean AXIsProcessTrusted(void) __attribute__((weak_import));
     [[NSUserDefaults standardUserDefaults] setBool:NO forKey:@"AXTestInProgress"];
     [[NSUserDefaults standardUserDefaults] synchronize];
     NSLog(@"[SafeMode] Cleared AX test flag on normal termination");
+}
+
+#pragma mark - Binary Integrity Check
+// Implementation delegated to PHTVBinaryIntegrity class for better code organization
+
++(NSString*)getBinaryArchitectures {
+    return [PHTVBinaryIntegrity getBinaryArchitectures];
+}
+
++(NSString*)getBinaryHash {
+    return [PHTVBinaryIntegrity getBinaryHash];
+}
+
++(BOOL)hasBinaryChangedSinceLastRun {
+    return [PHTVBinaryIntegrity hasBinaryChangedSinceLastRun];
+}
+
++(BOOL)checkBinaryIntegrity {
+    return [PHTVBinaryIntegrity checkBinaryIntegrity];
 }
 
 @end

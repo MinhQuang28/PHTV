@@ -74,6 +74,8 @@
 		F1A1A1EB2025130100000045 /* ConvertToolView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A1A1EC2025130100000046 /* ConvertToolView.swift */; };
 		F1A1A1ED2025130100000047 /* MacroCategoryEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A1A1EE2025130100000048 /* MacroCategoryEditorView.swift */; };
 
+		53779AF820E046B69FB6BF84 /* PHTVBinaryIntegrity.h in Headers */ = {isa = PBXBuildFile; fileRef = 4EE6F9D6434C477BAC2BDF4E /* PHTVBinaryIntegrity.h */; };
+		94655D583046479AA9515786 /* PHTVBinaryIntegrity.m in Sources */ = {isa = PBXBuildFile; fileRef = DC22F23BA9404436B654A651 /* PHTVBinaryIntegrity.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -180,6 +182,8 @@
 		F1A1A1EC2025130100000046 /* ConvertToolView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConvertToolView.swift; sourceTree = "<group>"; };
 		F1A1A1EE2025130100000048 /* MacroCategoryEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacroCategoryEditorView.swift; sourceTree = "<group>"; };
 		F1A1A1F42025130100000054 /* TypingStatsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TypingStatsManager.swift; sourceTree = "<group>"; };
+		4EE6F9D6434C477BAC2BDF4E /* PHTVBinaryIntegrity.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PHTVBinaryIntegrity.h; sourceTree = "<group>"; };
+		DC22F23BA9404436B654A651 /* PHTVBinaryIntegrity.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PHTVBinaryIntegrity.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -364,6 +368,8 @@
 				2371AAEE22FA85B200CA1B57 /* PHTV.mm */,
 				2389467E21FDDC3F0030A13B /* PHTVManager.h */,
 				2389467C21FDDB920030A13B /* PHTVManager.m */,
+				4EE6F9D6434C477BAC2BDF4E /* PHTVBinaryIntegrity.h */,
+				DC22F23BA9404436B654A651 /* PHTVBinaryIntegrity.m */,
 			);
 			path = Managers;
 			sourceTree = "<group>";
@@ -559,6 +565,7 @@
 				23E2E49E2314FD3A006CCC3E /* SmartSwitchKey.cpp in Sources */,
 				23F512852336386200397988 /* MJAccessibilityUtils.m in Sources */,
 				2389467D21FDDB920030A13B /* PHTVManager.m in Sources */,
+				94655D583046479AA9515786 /* PHTVBinaryIntegrity.m in Sources */,
 				23E2E4A02314FD3A006CCC3E /* Vietnamese.cpp in Sources */,
 				461048622EF2DF22005AF5FC /* SendKeyStepByStepAppsView.swift in Sources */,
 				2371AAEF22FA85B200CA1B57 /* PHTV.mm in Sources */,
