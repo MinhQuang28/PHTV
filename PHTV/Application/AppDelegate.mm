@@ -1982,148 +1982,106 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
 }
 
 -(void)setRunOnStartup:(BOOL)val {
-    // Use SMAppService for macOS 13+, SMLoginItemSetEnabled for older versions
+    // Use SMAppService for macOS 13+ (application target is macOS 13+)
+    SMAppService *appService = [SMAppService mainAppService];
+    NSError *error = nil;
 
-    if (@available(macOS 13.0, *)) {
-        // Modern approach: Use SMAppService
-        SMAppService *appService = [SMAppService mainAppService];
-        NSError *error = nil;
+    // Log current status
+    NSLog(@"[LoginItem] Current SMAppService status: %ld", (long)appService.status);
 
-        // Log current status
-        NSLog(@"[LoginItem] Current SMAppService status: %ld", (long)appService.status);
+    if (val) {
+        if (appService.status != SMAppServiceStatusEnabled) {
+            // Verify code signing before attempting registration
+            NSBundle *bundle = [NSBundle mainBundle];
+            NSString *bundlePath = bundle.bundlePath;
 
-        if (val) {
-            if (appService.status != SMAppServiceStatusEnabled) {
-                // Verify code signing before attempting registration
-                NSBundle *bundle = [NSBundle mainBundle];
-                NSString *bundlePath = bundle.bundlePath;
+            // Check if app is properly code signed
+            NSTask *verifyTask = [[NSTask alloc] init];
+            verifyTask.launchPath = @"/usr/bin/codesign";
+            verifyTask.arguments = @[@"--verify", @"--deep", @"--strict", bundlePath];
 
-                // Check if app is properly code signed
-                NSTask *verifyTask = [[NSTask alloc] init];
-                verifyTask.launchPath = @"/usr/bin/codesign";
-                verifyTask.arguments = @[@"--verify", @"--deep", @"--strict", bundlePath];
+            NSPipe *pipe = [NSPipe pipe];
+            verifyTask.standardError = pipe;
 
-                NSPipe *pipe = [NSPipe pipe];
-                verifyTask.standardError = pipe;
+            @try {
+                [verifyTask launch];
+                [verifyTask waitUntilExit];
 
-                @try {
-                    [verifyTask launch];
-                    [verifyTask waitUntilExit];
+                int status = verifyTask.terminationStatus;
+                if (status != 0) {
+                    NSData *errorData = [[pipe fileHandleForReading] readDataToEndOfFile];
+                    NSString *errorString = [[NSString alloc] initWithData:errorData encoding:NSUTF8StringEncoding];
+                    NSLog(@"⚠️ [LoginItem] Code signature verification failed: %@", errorString);
+                    NSLog(@"⚠️ [LoginItem] SMAppService may reject unsigned/ad-hoc signed apps");
+                } else {
+                    NSLog(@"✅ [LoginItem] Code signature verified");
+                }
+            } @catch (NSException *exception) {
+                NSLog(@"⚠️ [LoginItem] Failed to verify code signature: %@", exception);
+            }
 
-                    int status = verifyTask.terminationStatus;
-                    if (status != 0) {
-                        NSData *errorData = [[pipe fileHandleForReading] readDataToEndOfFile];
-                        NSString *errorString = [[NSString alloc] initWithData:errorData encoding:NSUTF8StringEncoding];
-                        NSLog(@"⚠️ [LoginItem] Code signature verification failed: %@", errorString);
-                        NSLog(@"⚠️ [LoginItem] SMAppService may reject unsigned/ad-hoc signed apps");
-                    } else {
-                        NSLog(@"✅ [LoginItem] Code signature verified");
-                    }
-                } @catch (NSException *exception) {
-                    NSLog(@"⚠️ [LoginItem] Failed to verify code signature: %@", exception);
+            // Attempt registration
+            BOOL success = [appService registerAndReturnError:&error];
+            if (success) {
+                NSLog(@"✅ [LoginItem] Registered with SMAppService");
+            } else {
+                NSLog(@"❌ [LoginItem] Failed to register with SMAppService");
+                NSLog(@"   Error: %@", error.localizedDescription);
+                NSLog(@"   Error Domain: %@", error.domain);
+                NSLog(@"   Error Code: %ld", (long)error.code);
+
+                if (error.userInfo) {
+                    NSLog(@"   Error UserInfo: %@", error.userInfo);
                 }
 
-                // Attempt registration
-                BOOL success = [appService registerAndReturnError:&error];
-                if (success) {
-                    NSLog(@"✅ [LoginItem] Registered with SMAppService");
-                } else {
-                    NSLog(@"❌ [LoginItem] Failed to register with SMAppService");
-                    NSLog(@"   Error: %@", error.localizedDescription);
-                    NSLog(@"   Error Domain: %@", error.domain);
-                    NSLog(@"   Error Code: %ld", (long)error.code);
-
-                    if (error.userInfo) {
-                        NSLog(@"   Error UserInfo: %@", error.userInfo);
-                    }
-
-                    // Common error codes and solutions
-                    if ([error.domain isEqualToString:@"SMAppServiceErrorDomain"]) {
-                        switch (error.code) {
-                            case 1: { // kSMAppServiceErrorAlreadyRegistered
-                                NSLog(@"   → App already registered (stale state). Trying to unregister first...");
-                                [appService unregisterAndReturnError:nil];
-                                // Retry after brief delay
-                                dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-                                    NSError *retryError = nil;
-                                    if ([appService registerAndReturnError:&retryError]) {
-                                        NSLog(@"✅ [LoginItem] Registration succeeded on retry");
-                                    } else {
-                                        NSLog(@"❌ [LoginItem] Registration still failed: %@", retryError.localizedDescription);
-                                    }
-                                });
-                                break;
-                            }
-                            case 2: { // kSMAppServiceErrorInvalidSignature
-                                NSLog(@"   → Invalid code signature. App must be properly signed with Developer ID");
-                                NSLog(@"   → Ad-hoc signed apps (for development) are NOT supported by SMAppService");
-                                NSLog(@"   → Solution: Sign with Apple Developer ID certificate or use notarization");
-                                break;
-                            }
-                            case 3: { // kSMAppServiceErrorInvalidPlist
-                                NSLog(@"   → Invalid Info.plist configuration");
-                                break;
-                            }
-                            default: {
-                                NSLog(@"   → Unknown SMAppService error");
-                                break;
-                            }
+                // Common error codes and solutions
+                if ([error.domain isEqualToString:@"SMAppServiceErrorDomain"]) {
+                    switch (error.code) {
+                        case 1: { // kSMAppServiceErrorAlreadyRegistered
+                            NSLog(@"   → App already registered (stale state). Trying to unregister first...");
+                            [appService unregisterAndReturnError:nil];
+                            // Retry after brief delay
+                            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+                                NSError *retryError = nil;
+                                if ([appService registerAndReturnError:&retryError]) {
+                                    NSLog(@"✅ [LoginItem] Registration succeeded on retry");
+                                } else {
+                                    NSLog(@"❌ [LoginItem] Registration still failed: %@", retryError.localizedDescription);
+                                }
+                            });
+                            break;
+                        }
+                        case 2: { // kSMAppServiceErrorInvalidSignature
+                            NSLog(@"   → Invalid code signature. App must be properly signed with Developer ID");
+                            NSLog(@"   → Ad-hoc signed apps (for development) are NOT supported by SMAppService");
+                            NSLog(@"   → Solution: Sign with Apple Developer ID certificate or use notarization");
+                            break;
+                        }
+                        case 3: { // kSMAppServiceErrorInvalidPlist
+                            NSLog(@"   → Invalid Info.plist configuration");
+                            break;
+                        }
+                        default: {
+                            NSLog(@"   → Unknown SMAppService error");
+                            break;
                         }
                     }
                 }
-            } else {
-                NSLog(@"ℹ️ [LoginItem] Already enabled, skipping registration");
             }
         } else {
-            if (appService.status == SMAppServiceStatusEnabled) {
-                BOOL success = [appService unregisterAndReturnError:&error];
-                if (success) {
-                    NSLog(@"✅ [LoginItem] Unregistered from SMAppService");
-                } else {
-                    NSLog(@"❌ [LoginItem] Failed to unregister: %@", error.localizedDescription);
-                    NSLog(@"   Error Domain: %@, Code: %ld", error.domain, (long)error.code);
-                }
-            } else {
-                NSLog(@"ℹ️ [LoginItem] Already disabled, skipping unregistration");
-            }
+            NSLog(@"ℹ️ [LoginItem] Already enabled, skipping registration");
         }
     } else {
-        // Legacy approach for macOS < 13 using LSSharedFileList
-        // This allows the main app to start itself without a helper app
-        LSSharedFileListRef loginItems = LSSharedFileListCreate(NULL, kLSSharedFileListSessionLoginItems, NULL);
-        if (loginItems) {
-            if (val) {
-                // Enable: Add main bundle to login items
-                NSURL *appURL = [NSURL fileURLWithPath:[[NSBundle mainBundle] bundlePath]];
-                LSSharedFileListItemRef item = LSSharedFileListInsertItemURL(loginItems, kLSSharedFileListItemLast, NULL, NULL, (__bridge CFURLRef)appURL, NULL, NULL);
-                if (item) {
-                    NSLog(@"✅ [LoginItem] Legacy: Added to login items via LSSharedFileList");
-                    CFRelease(item);
-                } else {
-                    NSLog(@"❌ [LoginItem] Legacy: Failed to add to login items");
-                }
+        if (appService.status == SMAppServiceStatusEnabled) {
+            BOOL success = [appService unregisterAndReturnError:&error];
+            if (success) {
+                NSLog(@"✅ [LoginItem] Unregistered from SMAppService");
             } else {
-                // Disable: Remove main bundle from login items
-                UInt32 seedValue;
-                CFArrayRef loginItemsArray = LSSharedFileListCopySnapshot(loginItems, &seedValue);
-                if (loginItemsArray) {
-                    NSString *appPath = [[NSBundle mainBundle] bundlePath];
-                    for (id item in (__bridge NSArray *)loginItemsArray) {
-                        LSSharedFileListItemRef itemRef = (__bridge LSSharedFileListItemRef)item;
-                        if (LSSharedFileListItemResolve(itemRef, 0, (CFURLRef *)NULL, NULL) == noErr) {
-                            NSURL *url = (__bridge_transfer NSURL *)LSSharedFileListItemCopyResolvedURL(itemRef, 0, NULL);
-                            if ([url.path isEqualToString:appPath]) {
-                                LSSharedFileListItemRemove(loginItems, itemRef);
-                                NSLog(@"✅ [LoginItem] Legacy: Removed from login items via LSSharedFileList");
-                            }
-                        }
-                    }
-                    CFRelease(loginItemsArray);
-                }
+                NSLog(@"❌ [LoginItem] Failed to unregister: %@", error.localizedDescription);
+                NSLog(@"   Error Domain: %@, Code: %ld", error.domain, (long)error.code);
             }
-            CFRelease(loginItems);
         } else {
-            NSLog(@"❌ [LoginItem] Legacy: Failed to create LSSharedFileList");
+            NSLog(@"ℹ️ [LoginItem] Already disabled, skipping unregistration");
         }
     }
 
