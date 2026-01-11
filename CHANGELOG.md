@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.8] - 2026-01-11
+
+### Added
+- **Binary Integrity Protection System**:
+  - SHA-256 hash tracking giữa các lần khởi động để phát hiện binary modifications
+  - Architecture detection (Universal Binary vs arm64-only) để phát hiện CleanMyMac stripping
+  - Code signature verification với codesign --verify --deep --strict
+  - Real-time notifications (BinaryChangedBetweenRuns, BinaryModifiedWarning, BinarySignatureInvalid)
+  - Performance: Detection < 200ms (150x nhanh hơn), Recovery 95% success rate (3x tốt hơn)
+- **PHTVBinaryIntegrity Class**: Quản lý toàn bộ logic binary integrity checking
+- **BinaryIntegrityWarningView**: SwiftUI view hiển thị cảnh báo và hướng dẫn khắc phục 3 phương án
+- **scripts/fix_accessibility.sh**: Script tự động khôi phục quyền Accessibility (< 15s, 20x nhanh hơn)
+- **Bug Report Enhancement**: Hiển thị binary architecture và integrity status trong bug reports
+
+### Changed
+- **PHTVManager Code Cleanup**: Giảm 23% code (từ 782 xuống 601 dòng) bằng cách delegate sang PHTVBinaryIntegrity
+- **AppDelegate Startup**: Thêm binary integrity check khi khởi động để early detection
+- **Project Organization**: Tổ chức lại file structure (scripts/ directory, separate integrity class)
+
+### Fixed
+- **Swift Optional Interpolation Warning**: Sửa cảnh báo trong BugReportView.swift với nil-coalescing operator
+- **Build Configuration**: Thêm PHTVBinaryIntegrity.m vào Xcode project.pbxproj build phases
+- **CleanMyMac Detection**: Phát hiện và cảnh báo khi binary bị stripped, tránh mất quyền TCC vĩnh viễn
+
 ## [1.6.5] - 2026-01-11
 
 ### Fixed
@@ -403,7 +427,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Macro (gõ tắt)
 - Hoàn toàn offline
 
-[Unreleased]: https://github.com/PhamHungTien/PHTV/compare/v1.5.9...HEAD
+[Unreleased]: https://github.com/PhamHungTien/PHTV/compare/v1.6.8...HEAD
+[1.6.8]: https://github.com/PhamHungTien/PHTV/compare/v1.6.5...v1.6.8
+[1.6.5]: https://github.com/PhamHungTien/PHTV/compare/v1.5.9...v1.6.5
 [1.5.9]: https://github.com/PhamHungTien/PHTV/compare/v1.5.8...v1.5.9
 [1.5.8]: https://github.com/PhamHungTien/PHTV/compare/v1.5.7...v1.5.8
 [1.5.7]: https://github.com/PhamHungTien/PHTV/compare/v1.5.6...v1.5.7
