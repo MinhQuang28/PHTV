@@ -711,7 +711,6 @@ extern "C" {
 
         // Arc Browser family
         @"com.thebrowser.Browser",     // Arc Browser
-        @"company.thebrowser.dia",     // Dia Browser (Arc variant)
 
         // Vietnamese browsers
         @"com.visualkit.browser",      // Cốc Cốc (old)
@@ -3075,7 +3074,7 @@ extern "C" {
                                 browserDelayType = isSafari ? DelayTypeSafariBrowser : DelayTypeBrowser;
                             }
                             SendBackspaceSequenceWithDelay(pData->backspaceCount, browserDelayType);
-                        } else if (appChars.needsStepByStep) {
+                        } else if (appChars.needsStepByStep || appChars.isTerminal) {
                             SendBackspaceSequenceWithDelay(pData->backspaceCount, DelayTypeTerminal);
                         } else {
                             SendBackspaceSequence(pData->backspaceCount, NO);
