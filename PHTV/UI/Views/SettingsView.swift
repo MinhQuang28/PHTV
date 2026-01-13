@@ -82,6 +82,7 @@ struct SettingsView: View {
             detailView
                 .environmentObject(appState)
                 .frame(minWidth: 400, minHeight: 400)
+                .liquidBackground()
         }
         .navigationSplitViewStyle(.balanced)
         .onChange(of: appState.showIconOnDock) { newValue in
@@ -122,8 +123,6 @@ struct SettingsView: View {
             AppsSettingsView()
         } else if selectedTab == .system {
             SystemSettingsView()
-        } else if selectedTab == .bugReport {
-            BugReportView()
         } else if selectedTab == .about {
             AboutView()
         }
@@ -299,22 +298,6 @@ struct SettingsItem: Identifiable {
             keywords: ["reset", "đặt lại", "khôi phục", "mặc định", "quản lý dữ liệu"]),
 
         // ═══════════════════════════════════════════
-        // MARK: - Báo lỗi (Bug Report)
-        // ═══════════════════════════════════════════
-        SettingsItem(
-            title: "Báo lỗi", iconName: "ladybug.fill", tab: .bugReport,
-            keywords: ["bug", "report", "lỗi", "báo cáo", "feedback", "phản hồi"]),
-        SettingsItem(
-            title: "Debug logs", iconName: "doc.text.fill", tab: .bugReport,
-            keywords: ["log", "debug", "nhật ký", "gỡ lỗi", "thông tin hệ thống"]),
-        SettingsItem(
-            title: "Gửi báo lỗi", iconName: "paperplane.fill", tab: .bugReport,
-            keywords: ["send", "gửi", "email", "github", "issue"]),
-        SettingsItem(
-            title: "Quyền Accessibility", iconName: "checkmark.shield", tab: .bugReport,
-            keywords: ["accessibility", "permission", "quyền", "trợ năng", "cấp quyền"]),
-
-        // ═══════════════════════════════════════════
         // MARK: - Thông tin (About)
         // ═══════════════════════════════════════════
         SettingsItem(
@@ -333,7 +316,6 @@ enum SettingsTab: String, CaseIterable, Identifiable {
     case macro = "Gõ tắt"
     case apps = "Ứng dụng"
     case system = "Hệ thống"
-    case bugReport = "Báo lỗi"
     case about = "Thông tin"
 
     nonisolated var id: String { rawValue }
@@ -346,7 +328,6 @@ enum SettingsTab: String, CaseIterable, Identifiable {
         case .macro: return "text.badge.checkmark"
         case .apps: return "square.stack.3d.up"
         case .system: return "gear"
-        case .bugReport: return "ladybug.fill"
         case .about: return "info.circle"
         }
     }

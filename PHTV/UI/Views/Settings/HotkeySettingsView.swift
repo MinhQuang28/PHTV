@@ -13,7 +13,7 @@ struct HotkeySettingsView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 20) {
+            VStack(spacing: LiquidGlass.Metrics.sectionSpacing) {
                 // Hotkey Configuration
                 SettingsCard(title: "Phím tắt chuyển chế độ", icon: "command.circle.fill") {
                     HotkeyConfigView()
@@ -29,12 +29,11 @@ struct HotkeySettingsView: View {
                     EmojiHotkeyConfigView()
                 }
 
-                Spacer(minLength: 20)
+                Spacer(minLength: 40)
             }
-            .frame(maxWidth: .infinity)
-            .padding(20)
+            .padding(24)
+            .frame(maxWidth: 800)
         }
-        .settingsBackground()
     }
 }
 

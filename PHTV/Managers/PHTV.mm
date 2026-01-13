@@ -1102,7 +1102,6 @@ extern "C" {
                 vLanguage = _languageTemp;
                 [[NSUserDefaults standardUserDefaults] setInteger:vLanguage forKey:@"InputMethod"];
                 RequestNewSession();  // Direct call, no cascading
-                [appDelegate fillData];  // Update UI only
 
                 // Notify SwiftUI (use separate notification for smart switch to avoid sound)
                 [[NSNotificationCenter defaultCenter] postNotificationName:@"LanguageChangedFromSmartSwitch"
@@ -1117,7 +1116,6 @@ extern "C" {
                 vCodeTable = (_languageTemp >> 1);
                 [[NSUserDefaults standardUserDefaults] setInteger:vCodeTable forKey:@"CodeTable"];
                 RequestNewSession();
-                [appDelegate fillData];
             } else {
                 saveSmartSwitchKeyData();
             }

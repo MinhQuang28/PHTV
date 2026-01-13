@@ -12,23 +12,13 @@ import SwiftUI
 
 struct CardStyle: ViewModifier {
     func body(content: Content) -> some View {
-        if #available(macOS 26.0, *) {
-            content
-                .padding()
-                .background {
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(.ultraThinMaterial)
-                        .glassEffect(in: .rect(cornerRadius: 12))
-                }
-        } else {
-            // Use drawingGroup() to flatten the view hierarchy and reduce compositing
-            content
-                .padding()
-                .background(Color(NSColor.controlBackgroundColor))
-                .cornerRadius(8)
-                .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
-                .drawingGroup(opaque: false)
-        }
+        content
+            .padding()
+            .background(Color(NSColor.controlBackgroundColor), in: RoundedRectangle(cornerRadius: 12))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color.primary.opacity(0.1), lineWidth: 1)
+            )
     }
 }
 
@@ -53,25 +43,7 @@ extension View {
     // Apply consistent defaults for TextField across the app
     @ViewBuilder
     func settingsTextField() -> some View {
-        #if os(iOS) || os(tvOS) || os(watchOS) || os(visionOS) || targetEnvironment(macCatalyst)
-        if #available(iOS 15.0, tvOS 15.0, watchOS 8.0, visionOS 1.0, *) {
-            self
-                .disableAutocorrection(true)
-                .textInputAutocapitalization(.never)
-        } else {
-            self
-                .disableAutocorrection(true)
-        }
-        #elseif os(macOS)
-        if #available(macOS 12.0, *) {
-            self
-                .disableAutocorrection(true)
-        } else {
-            self
-        }
-        #else
-        self
-        #endif
+        self.disableAutocorrection(true)
     }
 
     // Rounded text area style for TextEditor and similar inputs
@@ -79,33 +51,22 @@ extension View {
         self
             .padding(6)
             .background {
-                if #available(macOS 26.0, *) {
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(.ultraThinMaterial)
-                        .glassEffect(in: .rect(cornerRadius: 8))
-                } else {
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(Color(NSColor.controlBackgroundColor))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                        )
-                }
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color(NSColor.controlBackgroundColor))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(.tertiary, lineWidth: 0.5)
+                    )
             }
     }
 }
 
-// MARK: - Background Extension for Liquid Glass
+// MARK: - Background Extension
 
-/// Applies backgroundExtensionEffect on macOS 26+ to allow content to extend under the sidebar
 struct BackgroundExtensionModifier: ViewModifier {
     func body(content: Content) -> some View {
-        if #available(macOS 26.0, *) {
-            content
-                .backgroundExtensionEffect()
-        } else {
-            content
-        }
+        content
+            .background(Color(NSColor.windowBackgroundColor))
     }
 }
 
@@ -119,43 +80,32 @@ extension View {
 
 struct PrimaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
-        if #available(macOS 26.0, *) {
-            configuration.label
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-                .buttonStyle(.glassProminent)
-        } else {
-            configuration.label
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-                .background(Color.accentColor)
-                .foregroundColor(.white)
-                .cornerRadius(6)
-                .opacity(configuration.isPressed ? 0.8 : 1.0)
-        }
+        configuration.label
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            .background(Color.accentColor)
+            .foregroundColor(.white)
+            .clipShape(RoundedRectangle(cornerRadius: 6))
+            .opacity(configuration.isPressed ? 0.8 : 1.0)
+            .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
+            .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
     }
 }
 
 struct SecondaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
-        if #available(macOS 26.0, *) {
-            configuration.label
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-                .buttonStyle(.glass)
-        } else {
-            configuration.label
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-                .background(Color(NSColor.controlBackgroundColor))
-                .foregroundColor(.primary)
-                .cornerRadius(6)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 6)
-                        .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                )
-                .opacity(configuration.isPressed ? 0.8 : 1.0)
-        }
+        configuration.label
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            .background(Color(NSColor.controlBackgroundColor), in: RoundedRectangle(cornerRadius: 6))
+            .foregroundColor(.primary)
+            .overlay(
+                RoundedRectangle(cornerRadius: 6)
+                    .stroke(.tertiary, lineWidth: 0.5)
+            )
+            .opacity(configuration.isPressed ? 0.8 : 1.0)
+            .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
+            .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
     }
 }
 
@@ -175,90 +125,29 @@ extension Color {
     static let phtvSurface = Color(NSColor.controlBackgroundColor)
 }
 
-// MARK: - Adaptive Button Styles for Liquid Glass
+// MARK: - Adaptive Button Styles
 
 extension View {
-    /// Applies glassProminent on macOS 26+, borderedProminent on older versions
     @ViewBuilder
     func adaptiveProminentButtonStyle() -> some View {
-        if #available(macOS 26.0, *) {
-            self.buttonStyle(.glassProminent)
-        } else {
-            self.buttonStyle(.borderedProminent)
-        }
+        self.buttonStyle(.borderedProminent)
     }
 
-    /// Applies glass on macOS 26+, bordered on older versions
     @ViewBuilder
     func adaptiveBorderedButtonStyle() -> some View {
-        if #available(macOS 26.0, *) {
-            self.buttonStyle(.glass)
-        } else {
-            self.buttonStyle(.bordered)
-        }
+        self.buttonStyle(.bordered)
     }
 }
 
 // MARK: - Settings View Background
 
-/// Visual Effect background for blur effect
-/// Optimized: Uses Equatable to prevent unnecessary CALayer updates
-struct VisualEffectBackground: NSViewRepresentable, Equatable {
-    var material: NSVisualEffectView.Material
-    var blendingMode: NSVisualEffectView.BlendingMode
-
-    func makeNSView(context: Context) -> NSVisualEffectView {
-        let view = NSVisualEffectView()
-        view.material = material
-        view.blendingMode = blendingMode
-        view.state = .active
-        // Performance: Disable implicit animations for property changes
-        view.wantsLayer = true
-        view.layer?.actions = ["contents": NSNull(), "bounds": NSNull()]
-        return view
-    }
-
-    func updateNSView(_ nsView: NSVisualEffectView, context: Context) {
-        // Only update if values changed to reduce CALayer updates
-        if nsView.material != material {
-            nsView.material = material
-        }
-        if nsView.blendingMode != blendingMode {
-            nsView.blendingMode = blendingMode
-        }
-    }
-
-    nonisolated static func == (lhs: VisualEffectBackground, rhs: VisualEffectBackground) -> Bool {
-        lhs.material == rhs.material && lhs.blendingMode == rhs.blendingMode
-    }
-}
-
 /// Applies appropriate background for settings views
-/// Uses sidebar material for beautiful liquid glass effect when enabled
-/// Optimized: Reads directly from UserDefaults to avoid unnecessary redraws from AppState changes
+/// Uses standard Apple solid background for performance
 struct SettingsViewBackground: ViewModifier {
-    // Read directly from UserDefaults to avoid subscribing to all AppState changes
-    // Keys must match AppState: "vEnableLiquidGlassBackground" and "vSettingsBackgroundOpacity"
-    @AppStorage("vEnableLiquidGlassBackground") private var enableLiquidGlass = true
-    @AppStorage("vSettingsBackgroundOpacity") private var backgroundOpacity = 1.0
-
     func body(content: Content) -> some View {
-        if enableLiquidGlass {
-            content
-                .scrollContentBackground(.hidden)
-                .background(
-                    VisualEffectBackground(
-                        material: .sidebar,
-                        blendingMode: .behindWindow
-                    )
-                    .opacity(backgroundOpacity)
-                    .ignoresSafeArea()
-                )
-        } else {
-            content
-                .scrollContentBackground(.hidden)
-                .background(Color(NSColor.windowBackgroundColor))
-        }
+        content
+            .scrollContentBackground(.hidden)
+            .background(Color(NSColor.windowBackgroundColor))
     }
 }
 
@@ -269,46 +158,238 @@ extension View {
     }
 
     /// Conditionally applies searchable modifier (macOS 12+)
-    /// On macOS 11, search is not available - the view is returned unchanged
     @ViewBuilder
     func conditionalSearchable(text: Binding<String>, prompt: String) -> some View {
-        if #available(macOS 12.0, *) {
-            self.searchable(text: text, placement: .sidebar, prompt: prompt)
-        } else {
-            self
-        }
+        self.searchable(text: text, placement: .sidebar, prompt: prompt)
     }
 
     /// Compatible foregroundStyle - uses foregroundColor on macOS 11
     @ViewBuilder
     func compatForegroundStyle<S: ShapeStyle>(_ style: S) -> some View {
-        if #available(macOS 12.0, *) {
-            self.foregroundStyle(style)
-        } else {
-            if let color = style as? Color {
-                self.foregroundColor(color)
-            } else {
-                self
-            }
-        }
+        self.foregroundStyle(style)
     }
 
     /// Compatible foregroundStyle for HierarchicalShapeStyle
     @ViewBuilder
     func compatForegroundPrimary() -> some View {
-        if #available(macOS 12.0, *) {
-            self.foregroundStyle(.primary)
-        } else {
-            self.foregroundColor(.primary)
-        }
+        self.foregroundStyle(.primary)
     }
 
     @ViewBuilder
     func compatForegroundSecondary() -> some View {
-        if #available(macOS 12.0, *) {
-            self.foregroundStyle(.secondary)
-        } else {
-            self.foregroundColor(.secondary)
+        self.foregroundStyle(.secondary)
+    }
+}
+
+// MARK: - Compatibility Components (Adapters)
+
+struct SettingsCard<Content: View>: View {
+    let title: String
+    let icon: String
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: LiquidGlass.Metrics.elementSpacing) {
+            // Header
+            HStack(alignment: .center, spacing: 10) {
+                Image(systemName: icon)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 20, height: 20)
+                    .offset(y: -0.5) // Optical adjustment
+                
+                Text(title)
+                    .liquidSectionHeader()
+            }
+            .padding(.bottom, 4)
+            .padding(.leading, 4)
+            
+            // Content
+            VStack(spacing: 0) {
+                content
+            }
+            .liquidCard()
         }
+    }
+}
+
+struct SettingsToggleRow: View {
+    let icon: String
+    let iconColor: Color
+    let title: String
+    let subtitle: String
+    @Binding var isOn: Bool
+
+    var body: some View {
+        LiquidToggle(
+            title: title,
+            subtitle: subtitle,
+            icon: icon,
+            iconColor: .secondary, // Force Gray/Secondary to match "Off" state style
+            isOn: $isOn
+        )
+    }
+}
+
+struct SettingsDivider: View {
+    var body: some View {
+        Divider()
+            .padding(.leading, 54)
+            .opacity(0.5)
+    }
+}
+
+// MARK: - Liquid Glass Design System
+// Optimized for performance with solid colors
+
+enum LiquidGlass {
+    
+    // MARK: - Colors
+    // Semantic colors optimized for solid backgrounds
+    enum Colors {
+        static let tint = Color.accentColor
+        static let backgroundTint = Color.clear
+        static let secondaryBackground = Color.primary.opacity(0.03)
+        static let border = Color.primary.opacity(0.1)
+        static let activeBorder = Color.accentColor.opacity(0.3)
+        
+        static let textPrimary = Color.primary
+        static let textSecondary = Color.secondary
+        static let textTertiary = Color.secondary.opacity(0.7)
+    }
+    
+    // MARK: - Layout Metrics
+    enum Metrics {
+        static let cornerRadius: CGFloat = 12
+        static let cardPadding: CGFloat = 16
+        static let elementSpacing: CGFloat = 12
+        static let sectionSpacing: CGFloat = 20
+    }
+}
+
+// MARK: - View Modifiers
+
+struct LiquidBackgroundModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .background(Color(NSColor.windowBackgroundColor))
+    }
+}
+
+struct LiquidCardModifier: ViewModifier {
+    var isHovered: Bool = false
+    
+    func body(content: Content) -> some View {
+        content
+            .padding(LiquidGlass.Metrics.cardPadding)
+            .background {
+                ZStack {
+                    // Solid background
+                    RoundedRectangle(cornerRadius: LiquidGlass.Metrics.cornerRadius, style: .continuous)
+                        .fill(Color(NSColor.controlBackgroundColor))
+                    
+                    // Border
+                    RoundedRectangle(cornerRadius: LiquidGlass.Metrics.cornerRadius, style: .continuous)
+                        .stroke(
+                            isHovered ? LiquidGlass.Colors.activeBorder : LiquidGlass.Colors.border,
+                            lineWidth: 1
+                        )
+                }
+            }
+    }
+}
+
+struct LiquidSectionHeaderModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .font(.system(size: 13, weight: .bold, design: .rounded))
+            .foregroundStyle(LiquidGlass.Colors.textSecondary)
+            .textCase(.uppercase)
+    }
+}
+
+// MARK: - Component Extensions
+
+extension View {
+    func liquidBackground() -> some View {
+        modifier(LiquidBackgroundModifier())
+    }
+    
+    func liquidCard(isHovered: Bool = false) -> some View {
+        modifier(LiquidCardModifier(isHovered: isHovered))
+    }
+    
+    func liquidSectionHeader() -> some View {
+        modifier(LiquidSectionHeaderModifier())
+    }
+}
+
+// MARK: - Reusable Components
+
+struct LiquidToggle: View {
+    let title: String
+    let subtitle: String?
+    let icon: String
+    var iconColor: Color = .secondary
+    @Binding var isOn: Bool
+    
+    var body: some View {
+        HStack(spacing: 16) {
+            // Icon Container
+            ZStack {
+                Circle()
+                    .fill(Color.primary.opacity(0.05))
+                    .frame(width: 36, height: 36)
+                
+                Image(systemName: icon)
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundStyle(iconColor)
+            }
+            
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.system(.body, design: .rounded))
+                    .fontWeight(.medium)
+                    .foregroundStyle(LiquidGlass.Colors.textPrimary)
+                
+                if let subtitle = subtitle {
+                    Text(subtitle)
+                        .font(.system(.subheadline, design: .rounded))
+                        .foregroundStyle(LiquidGlass.Colors.textSecondary)
+                }
+            }
+            
+            Spacer()
+            
+            Toggle("", isOn: $isOn)
+                .labelsHidden()
+                .toggleStyle(.switch)
+        }
+        .padding(.vertical, 6)
+    }
+}
+
+struct LiquidNavigationLink<Destination: View>: View {
+    let title: String
+    let icon: String
+    let destination: Destination
+    
+    var body: some View {
+        NavigationLink(destination: destination) {
+            HStack(spacing: 12) {
+                Image(systemName: icon)
+                    .font(.system(size: 18))
+                    .frame(width: 24)
+                
+                Text(title)
+                    .font(.system(size: 15, weight: .medium, design: .rounded))
+                
+                Spacer()
+            }
+            .padding(.vertical, 8)
+            .padding(.horizontal, 12)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 }

@@ -24,7 +24,7 @@ struct SystemSettingsView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 20) {
+            VStack(spacing: LiquidGlass.Metrics.sectionSpacing) {
                 // Startup Settings
                 SettingsCard(title: "Khởi động", icon: "power.circle.fill") {
                     VStack(spacing: 0) {
@@ -48,63 +48,7 @@ struct SystemSettingsView: View {
                             subtitle: "Giữ cửa sổ Cài đặt hiển thị phía trên các ứng dụng khác",
                             isOn: $appState.settingsWindowAlwaysOnTop
                         )
-
-                        SettingsDivider()
-
-                        SettingsToggleRow(
-                            icon: "sparkles.rectangle.stack.fill",
-                            iconColor: .accentColor,
-                            title: "Giao diện Liquid Glass",
-                            subtitle: "Hiệu ứng nền kính mờ đẹp mắt cho cửa sổ cài đặt",
-                            isOn: $appState.enableLiquidGlassBackground
-                        )
-
-                        if appState.enableLiquidGlassBackground {
-                            SettingsDivider()
-
-                            VStack(spacing: 8) {
-                                HStack(spacing: 14) {
-                                    ZStack {
-                                        RoundedRectangle(cornerRadius: 8)
-                                            .fill(Color.accentColor.opacity(0.12))
-                                            .frame(width: 36, height: 36)
-
-                                        Image(systemName: "circle.lefthalf.filled")
-                                            .font(.system(size: 16, weight: .medium))
-                                            .foregroundStyle(Color.accentColor)
-                                    }
-
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text("Độ mờ nền cửa sổ")
-                                            .font(.body)
-                                            .foregroundStyle(.primary)
-
-                                        Text("Điều chỉnh độ trong suốt của nền cài đặt")
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
-                                    }
-
-                                    Spacer()
-
-                                    Text(String(format: "%.0f%%", appState.settingsBackgroundOpacity * 100))
-                                        .font(.subheadline)
-                                        .fontWeight(.semibold)
-                                        .foregroundStyle(.tint)
-                                        .frame(minWidth: 40, alignment: .trailing)
-                                }
-
-                                CustomSlider(
-                                    value: $appState.settingsBackgroundOpacity,
-                                    range: 0.5...1.0,
-                                    step: 0.05,
-                                    tintColor: .accentColor
-                                )
-                            }
-                            .padding(.vertical, 6)
-                            .transition(.opacity.combined(with: .move(edge: .top)))
-                        }
                     }
-                    .animation(.easeInOut(duration: 0.3), value: appState.enableLiquidGlassBackground)
                 }
 
                 // Menu Bar Settings
@@ -123,13 +67,13 @@ struct SystemSettingsView: View {
                         VStack(spacing: 8) {
                             HStack(spacing: 14) {
                                 ZStack {
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .fill(Color.accentColor.opacity(0.12))
+                                    Circle()
+                                        .fill(Color.secondary.opacity(0.12))
                                         .frame(width: 36, height: 36)
 
                                     Image(systemName: "arrow.up.left.and.arrow.down.right")
                                         .font(.system(size: 16, weight: .medium))
-                                        .foregroundStyle(Color.accentColor)
+                                        .foregroundStyle(.secondary)
                                 }
 
                                 VStack(alignment: .leading, spacing: 2) {
@@ -182,13 +126,13 @@ struct SystemSettingsView: View {
                         VStack(alignment: .leading, spacing: 8) {
                             HStack(spacing: 14) {
                                 ZStack {
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .fill(Color.accentColor.opacity(0.12))
+                                    Circle()
+                                        .fill(Color.secondary.opacity(0.12))
                                         .frame(width: 36, height: 36)
 
                                     Image(systemName: "clock.fill")
                                         .font(.system(size: 16, weight: .medium))
-                                        .foregroundStyle(Color.accentColor)
+                                        .foregroundStyle(.secondary)
                                 }
 
                                 VStack(alignment: .leading, spacing: 2) {
@@ -240,7 +184,7 @@ struct SystemSettingsView: View {
                         // Manual check
                         SettingsButtonRow(
                             icon: "arrow.clockwise.circle.fill",
-                            iconColor: .accentColor,
+                            iconColor: .secondary,
                             title: "Kiểm tra cập nhật",
                             subtitle: "Tìm phiên bản mới ngay bây giờ",
                             action: checkForUpdates
@@ -253,7 +197,7 @@ struct SystemSettingsView: View {
                     VStack(spacing: 0) {
                         SettingsButtonRow(
                             icon: "doc.on.clipboard.fill",
-                            iconColor: .accentColor,
+                            iconColor: .secondary,
                             title: "Chuyển đổi bảng mã",
                             subtitle: "Chuyển văn bản giữa Unicode, TCVN3, VNI...",
                             action: {
@@ -268,7 +212,7 @@ struct SystemSettingsView: View {
                     VStack(spacing: 0) {
                         SettingsButtonRow(
                             icon: "square.and.arrow.up.fill",
-                            iconColor: .accentColor,
+                            iconColor: .secondary,
                             title: "Xuất cài đặt",
                             subtitle: "Sao lưu toàn bộ cài đặt ra file",
                             action: {
@@ -280,7 +224,7 @@ struct SystemSettingsView: View {
 
                         SettingsButtonRow(
                             icon: "square.and.arrow.down.fill",
-                            iconColor: .accentColor,
+                            iconColor: .secondary,
                             title: "Nhập cài đặt",
                             subtitle: "Khôi phục cài đặt từ file sao lưu",
                             action: {
@@ -292,7 +236,7 @@ struct SystemSettingsView: View {
 
                         SettingsButtonRow(
                             icon: "arrow.counterclockwise.circle.fill",
-                            iconColor: .red,
+                            iconColor: .secondary,
                             title: "Đặt lại cài đặt",
                             subtitle: "Khôi phục mặc định",
                             isDestructive: true,
@@ -303,12 +247,11 @@ struct SystemSettingsView: View {
                     }
                 }
 
-                Spacer(minLength: 20)
+                Spacer(minLength: 40)
             }
-            .frame(maxWidth: .infinity)
-            .padding(20)
+            .padding(24)
+            .frame(maxWidth: 800)
         }
-        .settingsBackground()
         .sheet(isPresented: $showingConvertTool) {
             ConvertToolView()
         }
@@ -606,7 +549,7 @@ struct SettingsInfoRow: View {
     var body: some View {
         HStack(spacing: 14) {
             ZStack {
-                RoundedRectangle(cornerRadius: 8)
+                Circle()
                     .fill(iconColor.opacity(0.12))
                     .frame(width: 36, height: 36)
 
@@ -616,14 +559,14 @@ struct SettingsInfoRow: View {
             }
 
             Text(title)
-                .font(.body)
-                .foregroundStyle(.primary)
+                .font(.system(.body, design: .rounded))
+                .foregroundStyle(LiquidGlass.Colors.textPrimary)
 
             Spacer()
 
             Text(value)
                 .font(.system(.body, design: .monospaced))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(LiquidGlass.Colors.textSecondary)
         }
         .padding(.vertical, 6)
     }
@@ -642,7 +585,7 @@ struct SettingsButtonRow: View {
         Button(action: action) {
             HStack(spacing: 14) {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 8)
+                    Circle()
                         .fill(iconColor.opacity(0.12))
                         .frame(width: 36, height: 36)
 
@@ -661,12 +604,12 @@ struct SettingsButtonRow: View {
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title)
-                        .font(.body)
-                        .foregroundStyle(isDestructive ? .red : .primary)
+                        .font(.system(.body, design: .rounded))
+                        .foregroundStyle(isDestructive ? .red : LiquidGlass.Colors.textPrimary)
 
                     Text(subtitle)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .font(.system(.caption, design: .rounded))
+                        .foregroundStyle(LiquidGlass.Colors.textSecondary)
                 }
 
                 Spacer()
@@ -674,7 +617,7 @@ struct SettingsButtonRow: View {
                 if !isLoading {
                     Image(systemName: "chevron.right")
                         .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(.tertiary)
+                        .foregroundStyle(LiquidGlass.Colors.textTertiary)
                 }
             }
             .padding(.vertical, 6)

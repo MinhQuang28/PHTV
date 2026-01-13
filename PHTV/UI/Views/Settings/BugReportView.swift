@@ -16,6 +16,7 @@ private let phtvLogger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "com.
 
 struct BugReportView: View {
     @EnvironmentObject var appState: AppState
+    @Environment(\.dismiss) private var dismiss
 
     @State private var bugTitle: String = ""
     @State private var bugDescription: String = ""
@@ -28,23 +29,28 @@ struct BugReportView: View {
     @State private var isSending: Bool = false
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 20) {
-                // Bug Information Form
-                bugInfoSection
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: LiquidGlass.Metrics.sectionSpacing) {
+                    // Bug Information Form
+// ...
+                    actionsSection
 
-                // Debug Options & Info
-                debugOptionsSection
-
-                // Actions
-                actionsSection
-
-                Spacer(minLength: 20)
+                    Spacer(minLength: 40)
+                }
+                .padding(24)
+                .frame(maxWidth: 800)
             }
-            .frame(maxWidth: .infinity)
-            .padding(20)
+            .settingsBackground()
+            .navigationTitle("Báo lỗi & Góp ý")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Đóng") {
+                        dismiss()
+                    }
+                }
+            }
         }
-        .settingsBackground()
         .task {
             if cachedLogs.isEmpty {
                 await loadDebugLogsAsync()
@@ -72,14 +78,14 @@ struct BugReportView: View {
                                 .glassEffect(in: .rect(cornerRadius: 8))
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 8)
-                                        .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                        .stroke(LiquidGlass.Colors.border, lineWidth: 1)
                                 )
                         } else {
                             RoundedRectangle(cornerRadius: 8)
                                 .fill(Color(NSColor.textBackgroundColor))
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 8)
-                                        .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                        .stroke(LiquidGlass.Colors.border, lineWidth: 1)
                                 )
                         }
                     }
@@ -103,7 +109,7 @@ struct BugReportView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                     .overlay(
                         RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                            .stroke(LiquidGlass.Colors.border, lineWidth: 1)
                     )
                     .overlay(alignment: .topLeading) {
                         if bugDescription.isEmpty {

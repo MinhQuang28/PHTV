@@ -29,7 +29,7 @@ struct AppsSettingsView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 20) {
+            VStack(spacing: LiquidGlass.Metrics.sectionSpacing) {
                 // Smart Switch
                 SettingsCard(title: "Chuyển đổi thông minh", icon: "brain.fill") {
                     VStack(spacing: 0) {
@@ -107,7 +107,7 @@ struct AppsSettingsView: View {
 
                             HStack(spacing: 14) {
                                 ZStack {
-                                    RoundedRectangle(cornerRadius: 8)
+                                    Circle()
                                         .fill(Color.accentColor.opacity(0.12))
                                         .frame(width: 36, height: 36)
 
@@ -135,10 +135,9 @@ struct AppsSettingsView: View {
 
                 Spacer(minLength: 20)
             }
-            .frame(maxWidth: .infinity)
-            .padding(20)
+            .padding(24)
+            .frame(maxWidth: 800)
         }
-        .settingsBackground()
         .onAppear {
             checkClaudeCodeStatus()
         }
@@ -325,7 +324,7 @@ private struct ClaudeCodeToggleRow: View {
     var body: some View {
         HStack(spacing: 14) {
             ZStack {
-                RoundedRectangle(cornerRadius: 8)
+                Circle()
                     .fill(iconColor.opacity(0.12))
                     .frame(width: 36, height: 36)
 
@@ -343,12 +342,12 @@ private struct ClaudeCodeToggleRow: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(.body)
-                    .foregroundStyle(.primary)
+                    .font(.system(.body, design: .rounded))
+                    .foregroundStyle(LiquidGlass.Colors.textPrimary)
 
                 Text(subtitle)
-                    .font(.caption)
-                    .foregroundStyle(iconColor == .orange ? iconColor : .secondary)
+                    .font(.system(.caption, design: .rounded))
+                    .foregroundStyle(iconColor == .orange ? iconColor : LiquidGlass.Colors.textSecondary)
                     .lineLimit(1)
             }
 

@@ -21,7 +21,6 @@ NS_ASSUME_NONNULL_BEGIN
 
 -(void)onInputTypeSelectedIndex:(int)index;
 -(void)onCodeTableChanged:(int)index;
--(void)fillData;  // Update UI status bar and menu items
 
 -(void)setRunOnStartup:(BOOL)val;
 -(void)loadDefaultConfig;
@@ -30,7 +29,6 @@ NS_ASSUME_NONNULL_BEGIN
 
 -(void)onMacroSelected;
 -(void)onQuickConvert;
--(void)setQuickConvertString;
 
 -(void)setDockIconVisible:(BOOL)visible;
 -(void)showIcon:(BOOL)onDock;

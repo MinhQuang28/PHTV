@@ -28,19 +28,33 @@ struct TypingSettingsView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 20) {
+            VStack(spacing: LiquidGlass.Metrics.sectionSpacing) {
                 // Status Card
-                StatusCard(hasPermission: appState.hasAccessibilityPermission)
+                LiquidStatusCard(hasPermission: appState.hasAccessibilityPermission)
 
                 // Input Configuration
-                SettingsCard(title: "Cấu hình gõ", icon: "keyboard.fill") {
-                    VStack(spacing: 16) {
-                        // Input Method Picker
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Phương pháp gõ")
-                                .font(.subheadline)
-                                .fontWeight(.medium)
-                                .foregroundStyle(.secondary)
+                SettingsCard(title: "Cấu hình gõ", icon: "slider.horizontal.3") {
+                    VStack(spacing: 0) {
+                        // Input Method Row
+                        VStack(alignment: .leading, spacing: 12) {
+                            HStack(spacing: 16) {
+                                ZStack {
+                                    Circle()
+                                        .fill(Color.secondary.opacity(0.12))
+                                        .frame(width: 36, height: 36)
+
+                                    Image(systemName: "keyboard.fill")
+                                        .font(.system(size: 16, weight: .medium))
+                                        .foregroundStyle(.secondary)
+                                }
+
+                                Text("Phương pháp gõ")
+                                    .font(.system(.body, design: .rounded))
+                                    .fontWeight(.medium)
+                                    .foregroundStyle(LiquidGlass.Colors.textPrimary)
+                                
+                                Spacer()
+                            }
 
                             Picker("", selection: $appState.inputMethod) {
                                 ForEach(InputMethod.allCases) { method in
@@ -49,16 +63,30 @@ struct TypingSettingsView: View {
                             }
                             .pickerStyle(.segmented)
                             .labelsHidden()
+                            .padding(.leading, 52) // 36 (icon) + 16 (spacing)
                         }
+                        .padding(.vertical, 8)
 
-                        Divider()
+                        SettingsDivider()
 
-                        // Code Table Picker
-                        VStack(alignment: .leading, spacing: 8) {
+                        // Code Table Row
+                        HStack(spacing: 16) {
+                            ZStack {
+                                Circle()
+                                    .fill(Color.secondary.opacity(0.12))
+                                    .frame(width: 36, height: 36)
+
+                                Image(systemName: "textformat")
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundStyle(.secondary)
+                            }
+                            
                             Text("Bảng mã")
-                                .font(.subheadline)
+                                .font(.system(.body, design: .rounded))
                                 .fontWeight(.medium)
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(LiquidGlass.Colors.textPrimary)
+                            
+                            Spacer()
 
                             Picker("", selection: $appState.codeTable) {
                                 ForEach(CodeTable.allCases) { table in
@@ -66,38 +94,37 @@ struct TypingSettingsView: View {
                                 }
                             }
                             .labelsHidden()
+                            .frame(width: 180)
                         }
+                        .padding(.vertical, 8)
                     }
                 }
 
                 // Basic Features
-                SettingsCard(title: "Tính năng cơ bản", icon: "checkmark.circle.fill") {
-                    VStack(spacing: 0) {
-                        SettingsToggleRow(
-                            icon: "text.badge.checkmark",
-                            iconColor: .accentColor,
+                SettingsCard(title: "Tính năng cơ bản", icon: "checklist") {
+                    VStack(spacing: 4) {
+                        LiquidToggle(
                             title: "Kiểm tra chính tả",
                             subtitle: "Tự động phát hiện lỗi chính tả",
+                            icon: "text.badge.checkmark",
                             isOn: $appState.checkSpelling
                         )
 
-                        SettingsDivider()
+                        Divider().padding(.leading, 54).opacity(0.5)
 
-                        SettingsToggleRow(
-                            icon: "arrow.uturn.left.circle.fill",
-                            iconColor: .accentColor,
+                        LiquidToggle(
                             title: "Khôi phục phím nếu từ sai",
                             subtitle: "Khôi phục ký tự khi từ không hợp lệ",
+                            icon: "arrow.uturn.left.circle.fill",
                             isOn: $appState.restoreOnInvalidWord
                         )
 
-                        SettingsDivider()
+                        Divider().padding(.leading, 54).opacity(0.5)
 
-                        SettingsToggleRow(
-                            icon: "textformat.abc.dottedunderline",
-                            iconColor: .accentColor,
+                        LiquidToggle(
                             title: "Tự động nhận diện từ tiếng Anh",
-                            subtitle: "Khôi phục từ tiếng Anh khi gõ ở chế độ Việt (VD: tẻminal → terminal)",
+                            subtitle: "Khôi phục từ tiếng Anh (VD: tẻminal → terminal)",
+                            icon: "textformat.abc.dottedunderline",
                             isOn: $appState.autoRestoreEnglishWord
                         )
                     }
@@ -106,34 +133,38 @@ struct TypingSettingsView: View {
                 // Restore to Raw Keys Feature
                 SettingsCard(title: "Phím khôi phục", icon: "arrow.uturn.backward.circle.fill") {
                     VStack(spacing: 16) {
-                        SettingsToggleRow(
-                            icon: "arrow.uturn.backward.circle.fill",
-                            iconColor: .accentColor,
+                        LiquidToggle(
                             title: "Khôi phục về ký tự gốc",
-                            subtitle: "Khôi phục về ký tự đã gõ trước khi biến đổi (VD: user → úẻ → phím khôi phục → user)",
+                            subtitle: "Khôi phục về ký tự đã gõ trước khi biến đổi",
+                            icon: "arrow.uturn.backward.circle.fill",
                             isOn: $appState.restoreOnEscape
                         )
 
                         if appState.restoreOnEscape {
-                            Divider()
+                            Divider().opacity(0.5)
 
                             VStack(alignment: .leading, spacing: 12) {
-                                Text("Chọn phím khôi phục")
-                                    .font(.subheadline)
-                                    .fontWeight(.semibold)
-                                    .foregroundStyle(.primary)
+                                HStack(spacing: 8) {
+                                    Image(systemName: "target")
+                                        .font(.system(size: 12, weight: .semibold))
+                                        .foregroundStyle(.secondary)
+                                    
+                                    Text("Chọn phím khôi phục")
+                                        .font(.subheadline)
+                                        .fontWeight(.medium)
+                                        .foregroundStyle(.secondary)
+                                }
 
-                                // Grid of restore keys (3 columns, 3 keys total)
+                                // Grid of restore keys
                                 LazyVGrid(columns: [
                                     GridItem(.flexible(), spacing: 10),
                                     GridItem(.flexible(), spacing: 10),
                                     GridItem(.flexible(), spacing: 10)
                                 ], spacing: 10) {
                                     ForEach(RestoreKey.allCases) { key in
-                                        RestoreKeyButton(
+                                        LiquidRestoreKeyButton(
                                             key: key,
-                                            isSelected: appState.restoreKey == key,
-                                            themeColor: .accentColor
+                                            isSelected: appState.restoreKey == key
                                         ) {
                                             withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                                                 appState.restoreKey = key
@@ -147,38 +178,13 @@ struct TypingSettingsView: View {
                                     HStack(spacing: 10) {
                                         Image(systemName: "exclamationmark.triangle.fill")
                                             .foregroundStyle(.orange)
-                                            .font(.system(size: 14))
-
-                                        Text("Phím khôi phục trùng với phím bổ trợ trong phím tắt chuyển chế độ")
+                                        Text("Phím khôi phục trùng với phím chuyển chế độ")
                                             .font(.caption)
                                             .foregroundStyle(.orange)
-
-                                        Spacer()
                                     }
                                     .padding(10)
-                                    .background {
-                                        if #available(macOS 26.0, *) {
-                                            ZStack {
-                                                RoundedRectangle(cornerRadius: 8)
-                                                    .fill(.ultraThinMaterial)
-                                                RoundedRectangle(cornerRadius: 8)
-                                                    .fill(Color.orange.opacity(0.1))
-                                            }
-                                            .glassEffect(in: .rect(cornerRadius: 8))
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 8)
-                                                    .stroke(Color.orange.opacity(0.3), lineWidth: 1)
-                                            )
-                                        } else {
-                                            RoundedRectangle(cornerRadius: 8)
-                                                .fill(Color.orange.opacity(0.1))
-                                                .overlay(
-                                                    RoundedRectangle(cornerRadius: 8)
-                                                        .stroke(Color.orange.opacity(0.3), lineWidth: 1)
-                                                )
-                                        }
-                                    }
-                                    .transition(.scale.combined(with: .opacity))
+                                    .background(Color.orange.opacity(0.1))
+                                    .cornerRadius(8)
                                 }
                             }
                         }
@@ -187,321 +193,119 @@ struct TypingSettingsView: View {
 
                 // Enhancement Features
                 SettingsCard(title: "Cải thiện gõ", icon: "wand.and.stars") {
-                    VStack(spacing: 0) {
-                        SettingsToggleRow(
-                            icon: "textformat.abc",
-                            iconColor: .accentColor,
+                    VStack(spacing: 4) {
+                        LiquidToggle(
                             title: "Viết hoa ký tự đầu",
                             subtitle: "Tự động viết hoa sau dấu chấm",
+                            icon: "textformat.abc",
                             isOn: $appState.upperCaseFirstChar
                         )
 
-                        SettingsDivider()
+                        Divider().padding(.leading, 54).opacity(0.5)
 
-                        SettingsToggleRow(
-                            icon: "a.circle.fill",
-                            iconColor: .accentColor,
+                        LiquidToggle(
                             title: "Đặt dấu oà, uý",
                             subtitle: "Dấu trên chữ (oà, uý) thay vì dưới (òa, úy)",
+                            icon: "a.circle.fill",
                             isOn: $appState.useModernOrthography
                         )
 
-                        SettingsDivider()
+                        Divider().padding(.leading, 54).opacity(0.5)
 
-                        SettingsToggleRow(
-                            icon: "hare.fill",
-                            iconColor: .accentColor,
+                        LiquidToggle(
                             title: "Gõ nhanh (Quick Telex)",
-                            subtitle: "Gõ cc → ch, gg → gi, kk → kh, nn → ng...",
+                            subtitle: "Gõ cc → ch, gg → gi, kk → kh...",
+                            icon: "hare.fill",
                             isOn: $appState.quickTelex
                         )
                     }
                 }
 
                 // Advanced Consonants
-                SettingsCard(title: "Phụ âm nâng cao", icon: "character.textbox") {
-                    VStack(spacing: 0) {
-                        SettingsToggleRow(
-                            icon: "character",
-                            iconColor: .accentColor,
+                SettingsCard(title: "Phụ âm nâng cao", icon: "textformat.abc.dottedunderline") {
+                    VStack(spacing: 4) {
+                        LiquidToggle(
                             title: "Phụ âm Z, F, W, J",
                             subtitle: "Cho phép nhập các phụ âm ngoại lai",
+                            icon: "character",
                             isOn: $appState.allowConsonantZFWJ
                         )
 
-                        SettingsDivider()
+                        Divider().padding(.leading, 54).opacity(0.5)
 
-                        SettingsToggleRow(
-                            icon: "arrow.right.circle.fill",
-                            iconColor: .accentColor,
+                        LiquidToggle(
                             title: "Phụ âm đầu nhanh",
                             subtitle: "Gõ f → ph, j → gi, w → qu...",
+                            icon: "arrow.right.circle.fill",
                             isOn: $appState.quickStartConsonant
                         )
 
-                        SettingsDivider()
+                        Divider().padding(.leading, 54).opacity(0.5)
 
-                        SettingsToggleRow(
-                            icon: "arrow.left.circle.fill",
-                            iconColor: .accentColor,
+                        LiquidToggle(
                             title: "Phụ âm cuối nhanh",
                             subtitle: "Gõ g → ng, h → nh, k → ch...",
+                            icon: "arrow.left.circle.fill",
                             isOn: $appState.quickEndConsonant
                         )
                     }
                 }
-
-                Spacer(minLength: 20)
+                
+                Spacer(minLength: 40)
             }
-            .frame(maxWidth: .infinity)
-            .padding(20)
+            .padding(24)
+            .frame(maxWidth: 800) // Constrain width for better readability on large screens
         }
-        .settingsBackground()
     }
 }
 
-// MARK: - Reusable Components
+// MARK: - Specialized Components
 
-struct StatusCard: View {
+struct LiquidStatusCard: View {
     let hasPermission: Bool
 
     var body: some View {
         HStack(spacing: 16) {
-            Image(
-                systemName: hasPermission
-                    ? "checkmark.shield.fill" : "exclamationmark.triangle.fill"
-            )
-            .font(.system(size: 32))
-            .foregroundStyle(hasPermission ? Color.accentColor : .orange)
+            ZStack {
+                Circle()
+                    .fill(hasPermission ? Color.green.opacity(0.2) : Color.orange.opacity(0.2))
+                    .frame(width: 56, height: 56)
+                
+                Image(systemName: hasPermission ? "checkmark.shield.fill" : "exclamationmark.triangle.fill")
+                    .font(.system(size: 24))
+                    .foregroundStyle(hasPermission ? Color.green : Color.orange)
+            }
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(hasPermission ? "Sẵn sàng hoạt động" : "Cần cấp quyền")
-                    .font(.headline)
-                    .foregroundStyle(.primary)
+                    .font(.title3)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(LiquidGlass.Colors.textPrimary)
 
-                Text(
-                    hasPermission
-                        ? "Quyền Accessibility đã được cấp" : "Vui lòng cấp quyền để sử dụng"
-                )
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+                Text(hasPermission ? "PHTV đang hoạt động bình thường" : "Vui lòng cấp quyền Accessibility để bộ gõ hoạt động")
+                    .font(.body)
+                    .foregroundStyle(LiquidGlass.Colors.textSecondary)
             }
 
             Spacer()
 
             if !hasPermission {
-                if #available(macOS 26.0, *) {
-                    Button("Cấp quyền") {
-                        if let url = URL(
-                            string:
-                                "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
-                        ) {
-                            NSWorkspace.shared.open(url)
-                        }
+                Button("Cấp quyền") {
+                    if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
+                        NSWorkspace.shared.open(url)
                     }
-                    .buttonStyle(.glassProminent)
-                    .controlSize(.small)
-                    .tint(hasPermission ? .accentColor : .orange)
-                } else {
-                    Button("Cấp quyền") {
-                        if let url = URL(
-                            string:
-                                "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
-                        ) {
-                            NSWorkspace.shared.open(url)
-                        }
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.small)
                 }
+                .buttonStyle(.borderedProminent)
+                .tint(.orange)
             }
         }
-        .padding(16)
-        .frame(maxWidth: 700)
-        .background {
-            if #available(macOS 26.0, *) {
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(.ultraThinMaterial)
-                    .glassEffect(in: .rect(cornerRadius: 12))
-            } else {
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color(NSColor.controlBackgroundColor))
-                    .shadow(color: .black.opacity(0.06), radius: 3, x: 0, y: 2)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color.gray.opacity(0.15), lineWidth: 1)
-                    )
-            }
-        }
+        .liquidCard()
     }
 }
 
-struct SettingsCard<Content: View>: View {
-    let title: String
-    let icon: String
-    @ViewBuilder let content: Content
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            // Header
-            HStack(spacing: 10) {
-                Image(systemName: icon)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(.tint)
-
-                Text(title)
-                    .font(.headline)
-                    .foregroundStyle(.primary)
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 14)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color(NSColor.controlBackgroundColor).opacity(0.15))
-
-            Divider()
-                .opacity(0.5)
-
-            // Content
-            content
-                .padding(16)
-        }
-        .frame(maxWidth: 700)
-        .background {
-            if #available(macOS 26.0, *) {
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(.ultraThinMaterial)
-                    .glassEffect(in: .rect(cornerRadius: 12))
-            } else {
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color(NSColor.controlBackgroundColor))
-                    .shadow(color: .black.opacity(0.06), radius: 3, x: 0, y: 2)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color.gray.opacity(0.15), lineWidth: 1)
-                    )
-            }
-        }
-    }
-}
-
-struct SettingsToggleRow: View {
-    let icon: String
-    let iconColor: Color
-    let title: String
-    let subtitle: String
-    @Binding var isOn: Bool
-
-    var body: some View {
-        HStack(spacing: 14) {
-            // Icon background - no glass effect to avoid glass-on-glass
-            // (parent SettingsCard already has glass effect)
-            ZStack {
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(iconColor.opacity(0.12))
-                    .frame(width: 36, height: 36)
-
-                Image(systemName: icon)
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundStyle(iconColor)
-            }
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.body)
-                    .foregroundStyle(.primary)
-
-                Text(subtitle)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-            }
-
-            Spacer()
-
-            Toggle("", isOn: $isOn)
-                .labelsHidden()
-                .toggleStyle(.switch)
-                .tint(iconColor)
-        }
-        .padding(.vertical, 6)
-    }
-}
-
-struct SettingsDivider: View {
-    var body: some View {
-        Divider()
-            .padding(.leading, 50)
-    }
-}
-
-struct SettingsSliderRow: View {
-    let icon: String
-    let iconColor: Color
-    let title: String
-    let subtitle: String
-    let minValue: Double
-    let maxValue: Double
-    let step: Double
-    @Binding var value: Double
-    var valueFormatter: (Double) -> String = { String(format: "%.0f", $0) }
-    var onEditingChanged: ((Bool) -> Void)? = nil
-    var onValueChanged: ((Double) -> Void)? = nil
-
-    var body: some View {
-        VStack(spacing: 12) {
-            HStack(spacing: 14) {
-                // Icon background - no glass effect to avoid glass-on-glass
-                ZStack {
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(iconColor.opacity(0.12))
-                        .frame(width: 36, height: 36)
-
-                    Image(systemName: icon)
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundStyle(iconColor)
-                }
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title)
-                        .font(.body)
-                        .foregroundStyle(.primary)
-
-                    Text(subtitle)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-
-                Spacer()
-
-                Text(valueFormatter(value))
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(.tint)
-                    .frame(minWidth: 40, alignment: .trailing)
-            }
-
-            Slider(
-                value: $value,
-                in: minValue...maxValue,
-                step: step,
-                onEditingChanged: { editing in
-                    onEditingChanged?(editing)
-                }
-            )
-            .tint(iconColor)
-            .onChange(of: value) { newVal in
-                onValueChanged?(newVal)
-            }
-        }
-        .padding(.vertical, 6)
-    }
-}
-
-// MARK: - Restore Key Button Component
-struct RestoreKeyButton: View {
+struct LiquidRestoreKeyButton: View {
     let key: RestoreKey
     let isSelected: Bool
-    let themeColor: Color
     let action: () -> Void
 
     var body: some View {
@@ -510,42 +314,29 @@ struct RestoreKeyButton: View {
                 Text(key.symbol)
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundStyle(isSelected ? .white : .primary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
 
                 Text(shortDisplayName)
                     .font(.caption2)
                     .foregroundStyle(isSelected ? .white.opacity(0.9) : .secondary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
             }
             .frame(maxWidth: .infinity)
             .frame(height: 56)
             .background {
-                if #available(macOS 26.0, *) {
-                    if isSelected {
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill(themeColor)
-                            .shadow(color: themeColor.opacity(0.3), radius: 4, x: 0, y: 2)
-                    } else {
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill(.ultraThinMaterial)
-                            .glassEffect(in: .rect(cornerRadius: 10))
-                    }
+                if isSelected {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(Color.accentColor)
+                        .shadow(color: Color.accentColor.opacity(0.4), radius: 8, x: 0, y: 4)
                 } else {
-                    RoundedRectangle(cornerRadius: 10)
-                        .fill(isSelected ? themeColor : Color(NSColor.controlBackgroundColor))
-                        .shadow(color: isSelected ? themeColor.opacity(0.3) : Color.clear, radius: 4, x: 0, y: 2)
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(.thinMaterial)
                         .overlay(
-                            RoundedRectangle(cornerRadius: 10)
-                                .stroke(isSelected ? Color.clear : Color.gray.opacity(0.25), lineWidth: 1)
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .stroke(Color.primary.opacity(0.05), lineWidth: 1)
                         )
                 }
             }
-            .scaleEffect(isSelected ? 1.0 : 0.98)
         }
         .buttonStyle(.plain)
-        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
     }
 
     private var shortDisplayName: String {
@@ -555,10 +346,4 @@ struct RestoreKeyButton: View {
         case .control: return "Control"
         }
     }
-}
-
-#Preview {
-    TypingSettingsView()
-        .environmentObject(AppState.shared)
-        .frame(width: 500, height: 800)
 }

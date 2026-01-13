@@ -121,8 +121,6 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
 } while(0)
 
 @interface AppDelegate ()
-@property (nonatomic, strong) NSStatusItem *statusItem;
-@property (nonatomic, strong) NSMenu *statusMenu;
 
 // Live settings: status bar font size (set from SwiftUI)
 @property (nonatomic, assign) CGFloat statusBarFontSize;
@@ -162,22 +160,6 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
     BOOL _isUpdatingCodeTable;
 
     BOOL _needsRelaunchAfterPermission;
-
-    NSMenuItem* menuInputMethod;
-    
-    NSMenuItem* mnuTelex;
-    NSMenuItem* mnuVNI;
-    NSMenuItem* mnuSimpleTelex1;
-    NSMenuItem* mnuSimpleTelex2;
-    
-    NSMenuItem* mnuUnicode;
-    NSMenuItem* mnuTCVN;
-    NSMenuItem* mnuVNIWindows;
-    
-    NSMenuItem* mnuUnicodeComposite;
-    NSMenuItem* mnuVietnameseLocaleCP1258;
-    
-    NSMenuItem* mnuQuickConvert;
     
     id _appearanceObserver;
     id _inputSourceObserver;
@@ -190,7 +172,7 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
                                                                                        object:nil
                                                                                         queue:[NSOperationQueue mainQueue]
                                                                                    usingBlock:^(NSNotification *note) {
-        [self fillData];
+        // Appearance changed
     }];
 }
 
@@ -339,7 +321,6 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
             __sync_synchronize();
             [[NSUserDefaults standardUserDefaults] setInteger:vLanguage forKey:@"InputMethod"];
             RequestNewSession();
-            [self fillData];
             
             // Notify SwiftUI
             [[NSNotificationCenter defaultCenter] postNotificationName:@"LanguageChangedFromObjC" 
@@ -356,7 +337,6 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
             __sync_synchronize();
             [[NSUserDefaults standardUserDefaults] setInteger:vLanguage forKey:@"InputMethod"];
             RequestNewSession();
-            [self fillData];
             
             // Notify SwiftUI
             [[NSNotificationCenter defaultCenter] postNotificationName:@"LanguageChangedFromObjC" 
@@ -624,9 +604,6 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
             // Start TCC notification listener
             [PHTVManager startTCCNotificationListener];
 
-            // Update menu bar to normal state
-            [self fillDataWithAnimation:YES];
-
             // Show UI if requested
             NSInteger showui = [[NSUserDefaults standardUserDefaults] integerForKey:@"ShowUIOnStartup"];
             if (showui == 1) {
@@ -639,7 +616,6 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
                 NSLog(@"[Accessibility] Initialized successfully - skipping forced relaunch");
             }
         }
-        [self setQuickConvertString];
     });
 }
 
@@ -709,17 +685,6 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
             [PHTVManager invalidatePermissionCache];
             NSLog(@"[Accessibility] User opening System Settings to re-grant");
         }
-
-        // Update menu bar to show disabled state
-        if (self.statusItem && self.statusItem.button) {
-            NSFont *statusFont = [NSFont monospacedSystemFontOfSize:12 weight:NSFontWeightSemibold];
-            NSDictionary *attributes = @{
-                NSFontAttributeName: statusFont,
-                NSForegroundColorAttributeName: [NSColor systemRedColor]
-            };
-            NSAttributedString *title = [[NSAttributedString alloc] initWithString:@"⚠️" attributes:attributes];
-            self.statusItem.button.attributedTitle = title;
-        }
     });
 }
 
@@ -750,7 +715,6 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
                 // Update UI and start monitoring
                 [self startAccessibilityMonitoring];
                 [self startHealthCheckMonitoring];
-                [self fillDataWithAnimation:YES];
                 return;
             }
         }
@@ -919,7 +883,6 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
                 [[NSNotificationCenter defaultCenter] postNotificationName:@"ShowSettings" object:nil];
             }
         }
-        [self setQuickConvertString];
 
         // Initialize Sparkle auto-updater with delay
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(10.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
@@ -1136,7 +1099,6 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
     if (size > 28.0) size = 28.0;
 
     self.statusBarFontSize = size;
-    [self fillData];
 }
 
 - (void)handleLanguageChangedFromSwiftUI:(NSNotification *)notification {
@@ -1176,9 +1138,6 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
 
             // 4. Reset engine state IMMEDIATELY (synchronous!)
             RequestNewSession();
-
-            // 4. Update UI
-            [self fillData];
 
             // 5. Notify engine (async is OK since state is reset) - only if SmartSwitchKey enabled
             if (vUseSmartSwitchKey) {
@@ -1232,9 +1191,6 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
             // 4. Reset engine state IMMEDIATELY (synchronous, not async!)
             RequestNewSession();
 
-            // 4. Update UI
-            [self fillData];
-
             // 5. Notify engine (can be async since state is already reset) - only if SmartSwitchKey enabled
             if (vUseSmartSwitchKey) {
                 dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
@@ -1271,9 +1227,6 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
 
         [[NSUserDefaults standardUserDefaults] setInteger:vSwitchKeyStatus forKey:@"SwitchKeyStatus"];
         [[NSUserDefaults standardUserDefaults] synchronize];
-
-        // Update UI to reflect hotkey change
-        [self fillData];
 
         #ifdef DEBUG
         BOOL hasBeep = PHTV_HAS_BEEP(vSwitchKeyStatus);
@@ -1477,7 +1430,6 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
     if (newSwitchKeyStatus != vSwitchKeyStatus) {
         vSwitchKeyStatus = newSwitchKeyStatus;
         __sync_synchronize();
-        [self fillData];
         PHTV_LIVE_LOG(@"applied SwitchKeyStatus from defaults: 0x%X", vSwitchKeyStatus);
     }
 
@@ -1749,210 +1701,6 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
     return item;
 }
 
-#pragma mark - Status Bar Menu
-
--(void) createStatusBarMenu {
-    // Must be on main thread
-    if (![NSThread isMainThread]) {
-        NSLog(@"[StatusBar] createStatusBarMenu called off main thread - dispatching to main");
-        dispatch_sync(dispatch_get_main_queue(), ^{
-            [self createStatusBarMenu];
-        });
-        return;
-    }
-    
-    NSLog(@"[StatusBar] Creating status bar menu...");
-    
-    // Get system status bar
-    NSStatusBar *statusBar = [NSStatusBar systemStatusBar];
-    
-    // Create status item with VARIABLE length (important for text)
-    self.statusItem = [statusBar statusItemWithLength:NSVariableStatusItemLength];
-    
-    if (!self.statusItem) {
-        NSLog(@"[StatusBar] FATAL - Failed to create status item");
-        return;
-    }
-    
-    // Get button reference
-    NSStatusBarButton *button = self.statusItem.button;
-    if (!button) {
-        NSLog(@"[StatusBar] FATAL - Status item has no button");
-        return;
-    }
-    
-    // Configure button with native appearance
-    button.title = @"En";
-    button.toolTip = @"PHTV - Bộ gõ tiếng Việt";
-    
-    // Modern button styling
-    if (@available(macOS 11.0, *)) {
-        button.bezelStyle = NSBezelStyleTexturedRounded;
-    }
-    
-    // Create menu with native styling
-    self.statusMenu = [[NSMenu alloc] init];
-    self.statusMenu.autoenablesItems = NO;
-    
-    // Use system font for consistency
-    if (@available(macOS 10.15, *)) {
-        self.statusMenu.font = [NSFont menuFontOfSize:0];
-    }
-    
-    // === LANGUAGE TOGGLE ===
-    menuInputMethod = [[NSMenuItem alloc] initWithTitle:@"Bật Tiếng Việt" 
-                                                 action:@selector(onInputMethodSelected) 
-                                          keyEquivalent:@"v"];
-    menuInputMethod.target = self;
-    menuInputMethod.keyEquivalentModifierMask = NSEventModifierFlagCommand | NSEventModifierFlagShift;
-    [self.statusMenu addItem:menuInputMethod];
-    
-    [self.statusMenu addItem:[NSMenuItem separatorItem]];
-    
-    // === INPUT TYPE HEADER ===
-    NSMenuItem* menuInputType = [[NSMenuItem alloc] initWithTitle:@"Kiểu gõ" 
-                                                          action:nil 
-                                                   keyEquivalent:@""];
-    menuInputType.enabled = YES;  // Must be enabled for submenu to work
-    [self.statusMenu addItem:menuInputType];
-    
-    [self.statusMenu addItem:[NSMenuItem separatorItem]];
-    
-    // === CODE TABLE ITEMS ===
-    mnuUnicode = [[NSMenuItem alloc] initWithTitle:@"Unicode dựng sẵn" 
-                                            action:@selector(onCodeSelected:) 
-                                     keyEquivalent:@""];
-    mnuUnicode.target = self;
-    mnuUnicode.tag = 0;
-    [self.statusMenu addItem:mnuUnicode];
-    
-    mnuTCVN = [[NSMenuItem alloc] initWithTitle:@"TCVN3 (ABC)" 
-                                         action:@selector(onCodeSelected:) 
-                                  keyEquivalent:@""];
-    mnuTCVN.target = self;
-    mnuTCVN.tag = 1;
-    [self.statusMenu addItem:mnuTCVN];
-    
-    mnuVNIWindows = [[NSMenuItem alloc] initWithTitle:@"VNI Windows" 
-                                               action:@selector(onCodeSelected:) 
-                                        keyEquivalent:@""];
-    mnuVNIWindows.target = self;
-    mnuVNIWindows.tag = 2;
-    [self.statusMenu addItem:mnuVNIWindows];
-    
-    NSMenuItem* menuCode = [[NSMenuItem alloc] initWithTitle:@"Bảng mã khác..." 
-                                                      action:nil 
-                                               keyEquivalent:@""];
-    [self.statusMenu addItem:menuCode];
-    
-    [self.statusMenu addItem:[NSMenuItem separatorItem]];
-
-    // === TOOLS ===
-    mnuQuickConvert = [[NSMenuItem alloc] initWithTitle:@"Chuyển mã nhanh" 
-                                                 action:@selector(onQuickConvert) 
-                                          keyEquivalent:@""];
-    mnuQuickConvert.target = self;
-    [self.statusMenu addItem:mnuQuickConvert];
-    
-    [self.statusMenu addItem:[NSMenuItem separatorItem]];
-    
-    // === SETTINGS ===
-    NSMenuItem* startupItem = [[NSMenuItem alloc] initWithTitle:@"Khởi động cùng hệ thống" 
-                                                         action:@selector(toggleStartupItem:) 
-                                                  keyEquivalent:@""];
-    startupItem.target = self;
-    [self.statusMenu addItem:startupItem];
-    
-    [self.statusMenu addItem:[NSMenuItem separatorItem]];
-    
-    NSMenuItem* controlPanelItem = [[NSMenuItem alloc] initWithTitle:@"Bảng điều khiển..." 
-                                                              action:@selector(onControlPanelSelected) 
-                                                       keyEquivalent:@","];
-    controlPanelItem.target = self;
-    controlPanelItem.keyEquivalentModifierMask = NSEventModifierFlagCommand;
-    [self.statusMenu addItem:controlPanelItem];
-    
-    NSMenuItem* macroItem = [[NSMenuItem alloc] initWithTitle:@"Gõ tắt..." 
-                                                       action:@selector(onMacroSelected) 
-                                                keyEquivalent:@"m"];
-    macroItem.target = self;
-    macroItem.keyEquivalentModifierMask = NSEventModifierFlagCommand;
-    [self.statusMenu addItem:macroItem];
-    
-    NSMenuItem* aboutItem = [[NSMenuItem alloc] initWithTitle:@"Giới thiệu" 
-                                                       action:@selector(onAboutSelected) 
-                                                keyEquivalent:@""];
-    aboutItem.target = self;
-    [self.statusMenu addItem:aboutItem];
-    
-    [self.statusMenu addItem:[NSMenuItem separatorItem]];
-    
-    // === QUIT ===
-    NSMenuItem* quitItem = [[NSMenuItem alloc] initWithTitle:@"Thoát PHTV" 
-                                                      action:@selector(terminate:) 
-                                               keyEquivalent:@"q"];
-    quitItem.target = NSApp;
-    quitItem.keyEquivalentModifierMask = NSEventModifierFlagCommand;
-    [self.statusMenu addItem:quitItem];
-    
-    // Setup submenus
-    [self setInputTypeMenu:menuInputType];
-    [self setCodeMenu:menuCode];
-    
-    // ================================================
-    // CRITICAL: Assign menu to status item
-    // This is what makes the menu bar icon clickable!
-    // ================================================
-    self.statusItem.menu = self.statusMenu;
-    
-    // Log success
-    NSLog(@"[StatusBar] Menu created successfully");
-    NSLog(@"[StatusBar] Total items: %ld", (long)self.statusMenu.numberOfItems);
-    NSLog(@"[StatusBar] Button title: '%@'", button.title);
-    NSLog(@"[StatusBar] Menu assigned: %@", self.statusItem.menu ? @"YES" : @"NO");
-    
-    // Update UI with current settings (no animation on startup)
-    [self fillDataWithAnimation:NO];
-}
-
--(void)setQuickConvertString {
-    NSMutableString* hotKey = [NSMutableString stringWithString:@""];
-    bool hasAdd = false;
-    if (convertToolHotKey & 0x100) {
-        [hotKey appendString:@"⌃"];
-        hasAdd = true;
-    }
-    if (convertToolHotKey & 0x200) {
-        if (hasAdd)
-            [hotKey appendString:@" + "];
-        [hotKey appendString:@"⌥"];
-        hasAdd = true;
-    }
-    if (convertToolHotKey & 0x400) {
-        if (hasAdd)
-            [hotKey appendString:@" + "];
-        [hotKey appendString:@"⌘"];
-        hasAdd = true;
-    }
-    if (convertToolHotKey & 0x800) {
-        if (hasAdd)
-            [hotKey appendString:@" + "];
-        [hotKey appendString:@"⇧"];
-        hasAdd = true;
-    }
-    
-    unsigned short k = ((convertToolHotKey>>24) & 0xFF);
-    if (k != 0xFE) {
-        if (hasAdd)
-            [hotKey appendString:@" + "];
-        if (k == kVK_Space)
-            [hotKey appendFormat:@"%@", @"␣ "];
-        else
-            [hotKey appendFormat:@"%c", k];
-    }
-    [mnuQuickConvert setTitle: hasAdd ? [NSString stringWithFormat:@"Chuyển mã nhanh - [%@]", [hotKey uppercaseString]] : @"Chuyển mã nhanh"];
-}
-
 -(void)loadDefaultConfig {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     
@@ -1997,8 +1745,6 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
     // If user wants to clear macros, they can do it from the Macro Settings UI.
 
     [defaults synchronize];
-
-    [self fillData];
 }
 
 -(void)setRunOnStartup:(BOOL)val {
@@ -2153,7 +1899,7 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
 }
 
 -(void)setGrayIcon:(BOOL)val {
-    [self fillData];
+    // Legacy method - no op
 }
 
 -(void)setDockIconVisible:(BOOL)visible {
@@ -2202,115 +1948,11 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
 
 #pragma mark -StatusBar menu data
 
-- (void)setInputTypeMenu:(NSMenuItem*) parent {
-    // Create submenu if not exists
-    if (!parent.submenu) {
-        NSMenu *sub = [[NSMenu alloc] init];
-        sub.autoenablesItems = NO;
-        parent.submenu = sub;
-    }
-    
-    NSMenu *sub = parent.submenu;
-    [sub removeAllItems]; // Clear old items
-    
-    mnuTelex = [[NSMenuItem alloc] initWithTitle:@"Telex" action:@selector(onInputTypeSelected:) keyEquivalent:@""];
-    mnuTelex.target = self;
-    mnuTelex.tag = 0;
-    [sub addItem:mnuTelex];
-    
-    mnuVNI = [[NSMenuItem alloc] initWithTitle:@"VNI" action:@selector(onInputTypeSelected:) keyEquivalent:@""];
-    mnuVNI.target = self;
-    mnuVNI.tag = 1;
-    [sub addItem:mnuVNI];
-    
-    mnuSimpleTelex1 = [[NSMenuItem alloc] initWithTitle:@"Simple Telex 1" action:@selector(onInputTypeSelected:) keyEquivalent:@""];
-    mnuSimpleTelex1.target = self;
-    mnuSimpleTelex1.tag = 2;
-    [sub addItem:mnuSimpleTelex1];
-    
-    mnuSimpleTelex2 = [[NSMenuItem alloc] initWithTitle:@"Simple Telex 2" action:@selector(onInputTypeSelected:) keyEquivalent:@""];
-    mnuSimpleTelex2.target = self;
-    mnuSimpleTelex2.tag = 3;
-    [sub addItem:mnuSimpleTelex2];
-}
+// Legacy menu helper methods removed
 
-- (void)setCodeMenu:(NSMenuItem*) parent {
-    // Create submenu if not exists
-    if (!parent.submenu) {
-        NSMenu *sub = [[NSMenu alloc] init];
-        sub.autoenablesItems = NO;
-        parent.submenu = sub;
-    }
-    
-    NSMenu *sub = parent.submenu;
-    [sub removeAllItems]; // Clear old items
-    
-    mnuUnicodeComposite = [[NSMenuItem alloc] initWithTitle:@"Unicode tổ hợp" action:@selector(onCodeSelected:) keyEquivalent:@""];
-    mnuUnicodeComposite.target = self;
-    mnuUnicodeComposite.tag = 3;
-    [sub addItem:mnuUnicodeComposite];
-    
-    mnuVietnameseLocaleCP1258 = [[NSMenuItem alloc] initWithTitle:@"Vietnamese Locale CP 1258" action:@selector(onCodeSelected:) keyEquivalent:@""];
-    mnuVietnameseLocaleCP1258.target = self;
-    mnuVietnameseLocaleCP1258.tag = 4;
-    [sub addItem:mnuVietnameseLocaleCP1258];
-}
+// fillData removed
 
-- (void) fillData {
-    [self fillDataWithAnimation:YES];
-}
-
-- (void) fillDataWithAnimation:(BOOL)animated {
-    if (!self.statusItem || !self.statusItem.button) {
-        return;  // Silent fail - no logging on hot path
-    }
-
-    // PERFORMANCE: Use global variables directly (already in cache)
-    // DO NOT re-read from UserDefaults - eliminates disk I/O
-    NSInteger intInputMethod = vLanguage;
-    NSInteger intInputType = vInputType;
-    NSInteger intCode = vCodeTable;
-
-    // PERFORMANCE: Skip animation for faster response
-    // Users want instant feedback, not 150ms animation delay
-    static NSFont *statusFont = nil;
-    static CGFloat lastFontSize = 0.0;
-    CGFloat desiredSize = (self.statusBarFontSize > 0.0) ? self.statusBarFontSize : 12.0;
-    if (!statusFont || lastFontSize != desiredSize) {
-        lastFontSize = desiredSize;
-        statusFont = [NSFont monospacedSystemFontOfSize:desiredSize weight:NSFontWeightSemibold];
-    }
-
-    NSString *statusText = (intInputMethod == 1) ? @"Vi" : @"En";
-
-    // PERFORMANCE: Use simple color, skip grayIcon check (not critical for UX)
-    NSColor *textColor = (intInputMethod == 1) ? [NSColor systemBlueColor] : [NSColor secondaryLabelColor];
-
-    NSDictionary *attributes = @{
-        NSFontAttributeName: statusFont,
-        NSForegroundColorAttributeName: textColor
-    };
-    NSAttributedString *newTitle = [[NSAttributedString alloc] initWithString:statusText attributes:attributes];
-
-    // PERFORMANCE: No animation - instant update
-    self.statusItem.button.attributedTitle = newTitle;
-
-    // Update menu input method state
-    [menuInputMethod setState:(intInputMethod == 1) ? NSControlStateValueOn : NSControlStateValueOff];
-
-    // PERFORMANCE: Update only the active items, skip title updates
-    [mnuTelex setState:(intInputType == 0) ? NSControlStateValueOn : NSControlStateValueOff];
-    [mnuVNI setState:(intInputType == 1) ? NSControlStateValueOn : NSControlStateValueOff];
-    [mnuSimpleTelex1 setState:(intInputType == 2) ? NSControlStateValueOn : NSControlStateValueOff];
-    [mnuSimpleTelex2 setState:(intInputType == 3) ? NSControlStateValueOn : NSControlStateValueOff];
-
-    // PERFORMANCE: Direct updates, skip array iteration
-    [mnuUnicode setState:(intCode == 0) ? NSControlStateValueOn : NSControlStateValueOff];
-    [mnuTCVN setState:(intCode == 1) ? NSControlStateValueOn : NSControlStateValueOff];
-    [mnuVNIWindows setState:(intCode == 2) ? NSControlStateValueOn : NSControlStateValueOff];
-    [mnuUnicodeComposite setState:(intCode == 3) ? NSControlStateValueOn : NSControlStateValueOff];
-    [mnuVietnameseLocaleCP1258 setState:(intCode == 4) ? NSControlStateValueOn : NSControlStateValueOff];
-}
+// fillDataWithAnimation removed
 
 -(void)onImputMethodChanged:(BOOL)willNotify {
     // Re-entry guard: prevent notification ping-pong
@@ -2355,9 +1997,6 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
 
     // 4. Reset engine state IMMEDIATELY (synchronous!)
     RequestNewSession();
-
-    // 4. Update UI
-    [self fillData];
 
     // 5. Notify SwiftUI about language change
     [[NSNotificationCenter defaultCenter] postNotificationName:@"LanguageChangedFromBackend" object:@(vLanguage)];
@@ -2419,9 +2058,6 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
     // 4. Reset engine state IMMEDIATELY (synchronous!)
     RequestNewSession();
 
-    // 4. Update UI
-    [self fillData];
-
     // 5. Notify SwiftUI about input type change
     [[NSNotificationCenter defaultCenter] postNotificationName:@"LanguageChangedFromBackend" object:@(vLanguage)];
 
@@ -2469,9 +2105,6 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
 
     // 4. Reset engine state IMMEDIATELY (synchronous!)
     RequestNewSession();
-
-    // 4. Update UI
-    [self fillData];
 
     // 5. Notify engine (async is OK since state is reset)
     // Always refresh macro conversion state when code table changes.
@@ -2537,9 +2170,6 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
     BOOL newValue = !currentValue;
     
     [self setRunOnStartup:newValue];
-    
-    // Update menu item state
-    [self fillData];
     
     // Show notification
     NSString *message = newValue ? 
@@ -2622,7 +2252,6 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
             vLanguage = 0;  // Switch to English
             [[NSUserDefaults standardUserDefaults] setInteger:vLanguage forKey:@"InputMethod"];
             [[NSUserDefaults standardUserDefaults] synchronize];
-            [self fillData];
 
             NSLog(@"[ExcludedApp] Entered excluded app '%@' - switched to English (saved state: Vietnamese)", bundleIdentifier);
 
@@ -2641,7 +2270,6 @@ static inline BOOL PHTVLiveDebugEnabled(void) {
             vLanguage = 1;
             [[NSUserDefaults standardUserDefaults] setInteger:vLanguage forKey:@"InputMethod"];
             [[NSUserDefaults standardUserDefaults] synchronize];
-            [self fillData];
 
             NSLog(@"[ExcludedApp] Left excluded app, switched to '%@' - restored Vietnamese mode", bundleIdentifier);
 

@@ -68,25 +68,13 @@ struct HotkeyConfigView: View {
                     }
                     .padding(10)
                     .background {
-                        if #available(macOS 26.0, *) {
-                            ZStack {
-                                RoundedRectangle(cornerRadius: 8)
-                                    .fill(.ultraThinMaterial)
-                                RoundedRectangle(cornerRadius: 8)
-                                    .fill(Color.orange.opacity(0.1))
-                            }
-                            .glassEffect(in: .rect(cornerRadius: 8))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .stroke(Color.orange.opacity(0.3), lineWidth: 1)
-                            )
-                        } else {
+                        ZStack {
                             RoundedRectangle(cornerRadius: 8)
                                 .fill(Color.orange.opacity(0.1))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .stroke(Color.orange.opacity(0.3), lineWidth: 1)
-                                )
+                                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 8))
+                            
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color.orange.opacity(0.3), lineWidth: 1)
                         }
                     }
                     .transition(.scale.combined(with: .opacity))
@@ -147,25 +135,20 @@ struct HotkeyConfigView: View {
                         .padding(.vertical, 10)
                         .frame(minWidth: 180)
                         .background {
-                            if #available(macOS 26.0, *) {
-                                if isRecording {
-                                    RoundedRectangle(cornerRadius: 10)
-                                        .fill(Color.accentColor.opacity(0.1))
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 10)
-                                                .stroke(Color.accentColor, lineWidth: 1)
-                                        )
-                                } else {
-                                    RoundedRectangle(cornerRadius: 10)
-                                        .fill(.ultraThinMaterial)
-                                        .glassEffect(in: .rect(cornerRadius: 10))
-                                }
-                            } else {
+                            if isRecording {
                                 RoundedRectangle(cornerRadius: 10)
-                                    .fill(isRecording ? .accentColor.opacity(0.1) : Color(NSColor.controlBackgroundColor))
+                                    .fill(Color.accentColor.opacity(0.1))
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 10)
-                                            .stroke(isRecording ? .accentColor : Color.gray.opacity(0.3), lineWidth: 1)
+                                            .stroke(Color.accentColor, lineWidth: 1)
+                                    )
+                            } else {
+                                RoundedRectangle(cornerRadius: 10)
+                                    .fill(Color.white.opacity(0.05))
+                                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 10)
+                                            .stroke(Color.white.opacity(0.1), lineWidth: 1)
                                     )
                             }
                         }
@@ -190,17 +173,13 @@ struct HotkeyConfigView: View {
                         .padding(.horizontal, 14)
                         .padding(.vertical, 8)
                         .background {
-                            if #available(macOS 26.0, *) {
-                                ZStack {
-                                    RoundedRectangle(cornerRadius: 10)
-                                        .fill(.ultraThinMaterial)
-                                    RoundedRectangle(cornerRadius: 10)
-                                        .fill(Color.accentColor.opacity(0.08))
-                                }
-                                .glassEffect(in: .rect(cornerRadius: 10))
-                            } else {
+                            ZStack {
                                 RoundedRectangle(cornerRadius: 10)
                                     .fill(Color.accentColor.opacity(0.08))
+                                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
+                                
+                                RoundedRectangle(cornerRadius: 10)
+                                    .stroke(Color.accentColor.opacity(0.2), lineWidth: 1)
                             }
                         }
                         .transition(.scale.combined(with: .opacity))
@@ -313,24 +292,19 @@ struct ModifierKeyButton: View {
             .frame(maxWidth: .infinity)
             .frame(height: 56)
             .background {
-                if #available(macOS 26.0, *) {
-                    if isOn {
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill(Color.accentColor)
-                            .shadow(color: Color.accentColor.opacity(0.3), radius: 4, x: 0, y: 2)
-                    } else {
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill(.ultraThinMaterial)
-                            .glassEffect(in: .rect(cornerRadius: 10))
-                    }
-                } else {
+                if isOn {
                     RoundedRectangle(cornerRadius: 10)
-                        .fill(isOn ? .accentColor : Color(NSColor.controlBackgroundColor))
-                        .shadow(color: isOn ? .accentColor.opacity(0.3) : Color.clear, radius: 4, x: 0, y: 2)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 10)
-                                .stroke(isOn ? Color.clear : Color.gray.opacity(0.25), lineWidth: 1)
-                        )
+                        .fill(Color.accentColor)
+                        .shadow(color: Color.accentColor.opacity(0.3), radius: 4, x: 0, y: 2)
+                } else {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(Color.white.opacity(0.05))
+                            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
+                        
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                    }
                 }
             }
             .scaleEffect(isOn ? 1.0 : 0.98)
@@ -772,24 +746,19 @@ struct PauseKeyButton: View {
             .frame(maxWidth: .infinity)
             .frame(height: 56)
             .background {
-                if #available(macOS 26.0, *) {
-                    if isSelected {
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill(Color.accentColor)
-                            .shadow(color: Color.accentColor.opacity(0.3), radius: 4, x: 0, y: 2)
-                    } else {
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill(.ultraThinMaterial)
-                            .glassEffect(in: .rect(cornerRadius: 10))
-                    }
-                } else {
+                if isSelected {
                     RoundedRectangle(cornerRadius: 10)
-                        .fill(isSelected ? .accentColor : Color(NSColor.controlBackgroundColor))
-                        .shadow(color: isSelected ? .accentColor.opacity(0.3) : Color.clear, radius: 4, x: 0, y: 2)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 10)
-                                .stroke(isSelected ? Color.clear : Color.gray.opacity(0.25), lineWidth: 1)
-                        )
+                        .fill(Color.accentColor)
+                        .shadow(color: Color.accentColor.opacity(0.3), radius: 4, x: 0, y: 2)
+                } else {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(Color.white.opacity(0.05))
+                            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
+                        
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                    }
                 }
             }
             .scaleEffect(isSelected ? 1.0 : 0.98)
@@ -930,26 +899,22 @@ struct EmojiHotkeyConfigView: View {
                             .padding(.vertical, 10)
                             .frame(minWidth: 180)
                             .background {
-                                if #available(macOS 26.0, *) {
-                                    if isRecording {
-                                        RoundedRectangle(cornerRadius: 10)
-                                            .fill(Color.accentColor.opacity(0.1))
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 10)
-                                                    .stroke(Color.accentColor, lineWidth: 1)
-                                            )
-                                    } else {
-                                        RoundedRectangle(cornerRadius: 10)
-                                            .fill(.ultraThinMaterial)
-                                            .glassEffect(in: .rect(cornerRadius: 10))
-                                    }
-                                } else {
+                                if isRecording {
                                     RoundedRectangle(cornerRadius: 10)
-                                        .fill(isRecording ? .accentColor.opacity(0.1) : Color(NSColor.controlBackgroundColor))
+                                        .fill(Color.accentColor.opacity(0.1))
                                         .overlay(
                                             RoundedRectangle(cornerRadius: 10)
-                                                .stroke(isRecording ? .accentColor : Color.gray.opacity(0.3), lineWidth: 1)
+                                                .stroke(Color.accentColor, lineWidth: 1)
                                         )
+                                } else {
+                                    ZStack {
+                                        RoundedRectangle(cornerRadius: 10)
+                                            .fill(Color.white.opacity(0.05))
+                                            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
+                                        
+                                        RoundedRectangle(cornerRadius: 10)
+                                            .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                                    }
                                 }
                             }
                         }
@@ -973,17 +938,13 @@ struct EmojiHotkeyConfigView: View {
                             .padding(.horizontal, 14)
                             .padding(.vertical, 8)
                             .background {
-                                if #available(macOS 26.0, *) {
-                                    ZStack {
-                                        RoundedRectangle(cornerRadius: 10)
-                                            .fill(.ultraThinMaterial)
-                                        RoundedRectangle(cornerRadius: 10)
-                                            .fill(Color.accentColor.opacity(0.08))
-                                    }
-                                    .glassEffect(in: .rect(cornerRadius: 10))
-                                } else {
+                                ZStack {
                                     RoundedRectangle(cornerRadius: 10)
                                         .fill(Color.accentColor.opacity(0.08))
+                                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
+                                    
+                                    RoundedRectangle(cornerRadius: 10)
+                                        .stroke(Color.accentColor.opacity(0.2), lineWidth: 1)
                                 }
                             }
                             .transition(.scale.combined(with: .opacity))
